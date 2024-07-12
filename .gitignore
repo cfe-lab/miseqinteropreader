@@ -1,0 +1,14 @@
+.mypy_cache
+.pytest_cache
+.hypothesis
+__pycache__
+.env
+.venv
+poetry.lock
+.coverage
+coverage.xml
+build/
+dist/
+oracle/unzip
+*.rdb
+.ruff_cache

@@ -1,0 +1,75 @@
+---
+variables:
+  JUNIT_TEST_REPORT: test_report_${CI_COMMIT_TAG}.html
+  COVERAGE_TEST_REPORT: coverage_report_${CI_COMMIT_TAG}
+  PYTHON_TEST_TARGET:
+    value: "3.12"
+    options:
+      - "3.8"
+      - "3.9"
+      - "3.10"
+      - "3.11"
+      - "3.12"
+    description: >-
+      Version of python container to build and test with
+      (may not work outside of default value).
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+stages:
+  - test
+  - deploy
+
+.python:
+  image:
+    name: python:${PYTHON_TEST_TARGET}-slim
+    pull_policy: if-not-present
+  stage: test
+  before_script:
+    - pip install poetry
+    - poetry install --with=dev
+  tags:
+    - nodb
+
+code-check:
+  extends: .python
+  script:
+    - poetry run ruff check --exclude tests/ .
+    - poetry run mypy --exclude tests/ --exclude examples/ .
+
+unit-tests:
+  extends: .python
+  script:
+    - poetry run pytest
+      -vra
+      --html='${JUNIT_TEST_REPORT}'
+      --self-contained-html
+      --cov-report=html:'${COVERAGE_TEST_REPORT}'
+      --cov-report=term
+      --junitxml=pytest.xml
+  coverage: '/^TOTAL.+?(\d+\%)$/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+      junit: pytest.xml
+  tags:
+    - db
+
+build-and-publish:
+  stage: deploy
+  extends: .python
+  script:
+    - poetry build
+    - poetry version "$CI_COMMIT_TAG"
+    - poetry config repositories.gitlab "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+    - poetry config http-basic.gitlab gitlab-ci-token "$CI_JOB_TOKEN"
+    - poetry publish --build --repository gitlab
+  rules:
+    - if: $CI_COMMIT_TAG
