@@ -2,7 +2,13 @@ from datetime import datetime
 from math import isclose
 from typing import Annotated, Any
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, computed_field
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    computed_field,
+    model_serializer,
+)
 
 
 def assert_unsigned(v: int) -> int:
@@ -14,7 +20,7 @@ uint = Annotated[int, AfterValidator(assert_unsigned)]
 
 
 class BaseMetric(BaseModel):
-    model_config = ConfigDict()
+    model_config = ConfigDict(frozen=True)
     lane: uint
     tile: uint
 
@@ -26,8 +32,8 @@ class BaseMetric(BaseModel):
             for k, info in self.model_fields.items():
                 if info.annotation is float:
                     # we get into floating point innacuracies after 1e-7
-                    allowable = isclose(self_dict[k], other_dict[k], rel_tol=1e-7)
-                    comparison_array.append(allowable)
+                    close_enough = isclose(self_dict[k], other_dict[k], rel_tol=1e-7)
+                    comparison_array.append(close_enough)
                 else:
                     comparison_array.append(self_dict[k] == other_dict[k])
             return all(comparison_array)
@@ -96,8 +102,27 @@ class ErrorRecord(BaseCycleMetric):
     num_4_errors: uint
 
 
+def check_quality_record_length(v: list[int]) -> list[int]:
+    assert len(v) == 50, "Length mismatch!"
+    return v
+
+
 class QualityRecord(BaseCycleMetric):
-    quality_bins: list[int]
+    quality_bins: Annotated[list[int], AfterValidator(check_quality_record_length)]
+
+    @model_serializer
+    def custom_serializer(self):
+        """
+        Since this has a list, it complicates the eventual pandas
+        dataframe transformation. To that end we turn it into a flat dict
+        with a custom serializer function.
+        """
+        return {
+            "lane": self.lane,
+            "tile": self.tile,
+            "cycle": self.cycle,
+            **{f"{k:02}": v for k, v in enumerate(self.quality_bins)},
+        }
 
 
 class TileMetricRecord(BaseMetric):

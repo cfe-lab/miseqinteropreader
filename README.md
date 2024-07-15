@@ -1,5 +1,9 @@
 # Miseq Binary Parser
 
+[![pipeline status](https://git-int.cfenet.ubc.ca/drickett/miseqinteropreader/badges/main/pipeline.svg)](https://git-int.cfenet.ubc.ca/drickett/miseqinteropreader/-/commits/main)
+[![coverage report](https://git-int.cfenet.ubc.ca/drickett/miseqinteropreader/badges/main/coverage.svg)](https://git-int.cfenet.ubc.ca/drickett/miseqinteropreader/-/commits/main)
+[![Latest Release](https://git-int.cfenet.ubc.ca/drickett/miseqinteropreader/-/badges/release.svg)](https://git-int.cfenet.ubc.ca/drickett/miseqinteropreader/-/releases)
+
 This module is built to replace the [Illuminate](https://github.com/nthmost/illuminate) package, which has not seen an update in over 7 years.
 
 The foundation of this code is based on the [MiCall](https://github.com/cfe-lab/MiCall) project's [Error Metrics Parser](https://github.com/cfe-lab/MiCall/blob/master/micall/monitor/error_metrics_parser.py), [Quality Metrics Parser](https://github.com/cfe-lab/MiCall/blob/master/micall/monitor/quality_metrics_parser.py), and [Tile Metrics Parser](https://github.com/cfe-lab/MiCall/blob/master/micall/monitor/tile_metrics_parser.py).

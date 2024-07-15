@@ -3,7 +3,6 @@ from random import Random
 from struct import pack
 
 import pytest
-
 from interop_reader.read_records import BinaryFormat
 
 
@@ -73,10 +72,10 @@ def quality_metric_row(quality_metric_data: list[int | float]) -> bytes:
 
 @pytest.fixture
 def tile_metric_file(run_dir: Path, tile_metric_row: bytes) -> Path:
-    file = run_dir / "InterOp" / "TileMetricOut.bin"
+    file = run_dir / "InterOp" / "TileMetricsOut.bin"
     with open(file, "wb") as f:
         f.write(pack("!BB", BinaryFormat.TILE.min_version, BinaryFormat.TILE.length))
         f.write(tile_metric_row)
-    print(file.read_bytes())
+    # print(file.read_bytes())
 
     return file

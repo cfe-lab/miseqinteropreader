@@ -39,7 +39,7 @@ code-check:
   extends: .python
   script:
     - poetry run ruff check --exclude tests/ .
-    - poetry run mypy --exclude tests/ --exclude examples/ .
+    - poetry run mypy --check --exclude tests/ --exclude examples/ .
 
 unit-tests:
   extends: .python

@@ -17,7 +17,6 @@ pytest-html = "^4.1.1"
 mypy = "^1.10.1"
 mypy-extensions = "^1.0.0"
 ruff = "^0.5.1"
-isort = "^5.13.2"
 
 [build-system]
 requires = ["poetry-core"]
@@ -37,6 +36,13 @@ render_collapsed = "true"
 addopts = "-p no:cacheproviders -vra --strict-markers --cov=src/interop_reader --cov-report xml:coverage.xml --cov-report term --no-cov-on-fail"
 filterwarnings = []
 
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle, isort
+select = ["F", "E", "W", "I001"]
+fixable = ["ALL"]
 
 [tool.coverage.run]
 branch = true

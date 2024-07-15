@@ -1,7 +1,7 @@
 {
     "[python]": {
         "editor.codeActionsOnSave": {
-            "source.organizeImports": "explicit"
+            "source.organizeImports.ruff": "explicit"
         },
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true
@@ -14,8 +14,6 @@
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
     "files.trimTrailingWhitespace": true,
-    "isort.check": true,
-    "isort.importStrategy": "fromEnvironment",
     "mypy.enabled": true,
     "mypy.runUsingActiveInterpreter": true,
     "python.pipenvPath": "pipenv",
@@ -25,6 +23,8 @@
     "python.testing.pytestEnabled": true,
     "testing.followRunningTest": true,
     "testing.gutterEnabled": true,
-    // "ruff.enable": true,
-    // "ruff.importStrategy": "fromEnvironment",
+    "python.languageServer": "Default",
+    "ruff.enable": true,
+    "ruff.importStrategy": "fromEnvironment",
+    "ruff.configurationPreference": "filesystemFirst"
 }
