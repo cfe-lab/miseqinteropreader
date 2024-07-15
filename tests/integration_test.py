@@ -5,6 +5,7 @@ from random import Random
 
 import pytest
 from interop_reader import InterOpReader, MetricFile
+from interop_reader.models import QualityRecord, TileMetricRecord
 
 
 @pytest.fixture(scope="session")
@@ -35,29 +36,120 @@ def random_interop_folder(seeded_rng: Random) -> Path:
     condition=os.getenv("CI", None) is not None,
     reason="Unable to perform test in CI.",
 )
-def test_read_interop_dir(random_interop_folder: Path):
-    ior = InterOpReader(random_interop_folder)
-    print(f"Testing with {ior.run_name}")
-    files_present = ior.check_files_present(
-        {MetricFile.ERROR_METRICS, MetricFile.QUALITY_METRICS, MetricFile.TILE_METRICS}
-    )
+class TestIntegrations:
+    def test_read_interop_dir(self, random_interop_folder: Path):
+        ior = InterOpReader(random_interop_folder)
+        print(f"Testing with {ior.run_name}")
+        files_present = ior.check_files_present(
+            {
+                MetricFile.ERROR_METRICS,
+                MetricFile.QUALITY_METRICS,
+                MetricFile.TILE_METRICS,
+            }
+        )
 
-    assert files_present
-    assert ior.qc_uploaded
-    assert ior.needs_processing
+        assert files_present
+        assert ior.qc_uploaded
+        assert ior.needsprocessing
 
-    for metric in [
-        MetricFile.ERROR_METRICS,
-        MetricFile.QUALITY_METRICS,
-        MetricFile.TILE_METRICS,
-        MetricFile.SUMMARY_RUN,
-    ]:
-        if metric == MetricFile.SUMMARY_RUN:
-            with pytest.raises(ReferenceError):
+        for metric in [
+            MetricFile.ERROR_METRICS,
+            MetricFile.QUALITY_METRICS,
+            MetricFile.TILE_METRICS,
+            MetricFile.SUMMARY_RUN,
+        ]:
+            if metric == MetricFile.SUMMARY_RUN:
+                with pytest.raises(ReferenceError):
+                    records = ior.read_file(metric)
+                    for record in records:
+                        assert isinstance(record, metric.value.model)
+            else:
                 records = ior.read_file(metric)
                 for record in records:
                     assert isinstance(record, metric.value.model)
-        else:
-            records = ior.read_file(metric)
-            for record in records:
-                assert isinstance(record, metric.value.model)
+
+    def test_summarize_quality_metrics(self, random_interop_folder: Path):
+        ior = InterOpReader(random_interop_folder)
+        print(f"Testing with {ior.run_name}")
+        files_present = ior.check_files_present({MetricFile.QUALITY_METRICS})
+
+        assert files_present
+        assert ior.qc_uploaded
+        assert ior.needsprocessing
+
+        records: list[QualityRecord]
+        records = ior.read_file(MetricFile.QUALITY_METRICS)  # type: ignore
+        for record in records:
+            assert isinstance(record, QualityRecord)
+
+        summary = ior.summarize_quality_records(records)
+
+        assert summary.total_reverse == 0
+        assert summary.total_count > 0
+        assert summary.good_count > 0
+        assert summary.good_reverse == 0
+        assert 0 < summary.q30_forward <= 1
+        assert summary.q30_forward == (summary.good_count / summary.total_count)
+        assert summary.q30_reverse == 0.0
+
+    def test_summarize_tile_metrics(self, random_interop_folder: Path):
+        ior = InterOpReader(random_interop_folder)
+        print(f"Testing with {ior.run_name}")
+        files_present = ior.check_files_present({MetricFile.TILE_METRICS})
+
+        assert files_present
+        assert ior.qc_uploaded
+        assert ior.needsprocessing
+
+        records: list[TileMetricRecord]
+        records = ior.read_file(MetricFile.TILE_METRICS)  # type: ignore
+        for record in records:
+            assert isinstance(record, TileMetricRecord)
+
+        summary = ior.summarize_tile_records(records)
+
+        assert summary.density_count > 0
+        assert summary.density_sum > 0
+        assert summary.total_clusters > 0
+        assert summary.passing_clusters > 0
+        assert 0 < summary.pass_rate <= 1
+        assert summary.pass_rate == (summary.passing_clusters / summary.total_clusters)
+        assert summary.cluster_density == (summary.density_sum / summary.density_count)
+
+    @pytest.mark.parametrize(
+        "metricfile",
+        [
+            pytest.param(MetricFile.TILE_METRICS, id=MetricFile.TILE_METRICS.name),
+            pytest.param(MetricFile.ERROR_METRICS, id=MetricFile.ERROR_METRICS.name),
+            pytest.param(
+                MetricFile.QUALITY_METRICS, id=MetricFile.QUALITY_METRICS.name
+            ),
+        ],
+    )
+    def test_summarize_tile_metrics_as_df(
+        self, metricfile: MetricFile, random_interop_folder: Path
+    ):
+        ior = InterOpReader(random_interop_folder)
+        print(f"Testing with {ior.run_name}")
+        files_present = ior.check_files_present({metricfile})
+
+        assert files_present
+        assert ior.qc_uploaded
+        assert ior.needsprocessing
+
+        results = ior.read_file(metricfile)
+        df = ior.read_file_to_dataframe(metricfile)
+
+        assert len(results) == len(df.index)
+        assert list(results[0].model_dump().keys()) == list(df)
+
+        random_rows = []
+        rng = Random()
+        for i in range(min(1, int(len(results) * 0.1))):
+            random_rows.append(rng.randint(0, len(results) - 1))
+
+        for row_id in random_rows:
+            result = results[row_id].model_dump()
+            result_df = df.iloc[row_id].to_dict(into=dict)
+
+            assert result == result_df

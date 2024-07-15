@@ -5,8 +5,10 @@ import sys
 from itertools import groupby
 from operator import itemgetter
 
+from interop_reader.models import ErrorMetricsSummary
 
-def _yield_cycles(records, read_lengths):
+
+def _yield_cycles(records, read_lengths: tuple[int, int, int] | None = None):
     sorted_records = sorted(map(itemgetter("tile", "cycle", "error_rate"), records))
     max_forward_cycle = read_lengths and read_lengths[0] or sys.maxsize
     min_reverse_cycle = read_lengths and sum(read_lengths[:-1]) + 1 or sys.maxsize
@@ -25,7 +27,7 @@ def _record_grouper(record):
     return (record[0], int(math.copysign(1, record[1])))
 
 
-def write_phix_csv(out_file, records, read_lengths=None, summary=None):
+def write_phix_csv(out_file, records, read_lengths: tuple[int, int, int] | None = None):
     """Write phiX error rate data to a comma-separated-values file.
 
     Missing cycles are written with blank error rates, index reads are not
@@ -63,7 +65,10 @@ def write_phix_csv(out_file, records, read_lengths=None, summary=None):
             while previous_cycle * sign < read_length * sign:
                 previous_cycle += sign
                 writer.writerow((record[0], previous_cycle, ""))
-    if error_counts[1] > 0 and summary is not None:
-        summary["error_rate_fwd"] = error_sums[1] / error_counts[1]
-    if error_counts[0] > 0 and summary is not None:
-        summary["error_rate_rev"] = error_sums[0] / error_counts[0]
+
+    return ErrorMetricsSummary(
+        error_sum_forward=error_sums[1],
+        error_count_forward=error_counts[1],
+        error_sum_reverse=error_sums[0],
+        error_count_reverse=error_counts[0],
+    )

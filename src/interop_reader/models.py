@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import cached_property
 from math import isclose
 from typing import Annotated, Any
 
@@ -19,7 +20,10 @@ def assert_unsigned(v: int) -> int:
 uint = Annotated[int, AfterValidator(assert_unsigned)]
 
 
-class BaseMetric(BaseModel):
+###### Row record models
+
+
+class BaseMetricRecord(BaseModel):
     model_config = ConfigDict(frozen=True)
     lane: uint
     tile: uint
@@ -40,11 +44,11 @@ class BaseMetric(BaseModel):
         return False
 
 
-class BaseCycleMetric(BaseMetric):
+class BaseCycleMetricRecord(BaseMetricRecord):
     cycle: uint
 
 
-class CorrectedIntensityRecord(BaseCycleMetric):
+class CorrectedIntensityRecord(BaseCycleMetricRecord):
     avg_cycle_intensity: uint
     avg_corrected_intensity_a: uint
     avg_corrected_intensity_c: uint
@@ -62,7 +66,7 @@ class CorrectedIntensityRecord(BaseCycleMetric):
     snr: float
 
 
-class ExtractionRecord(BaseCycleMetric):
+class ExtractionRecord(BaseCycleMetricRecord):
     focus_a: float
     focus_c: float
     focus_g: float
@@ -73,27 +77,28 @@ class ExtractionRecord(BaseCycleMetric):
     max_intensity_t: uint
     datestamp: uint
 
-    @computed_field
+    @computed_field  # type: ignore
+    @cached_property
     def datetime(self) -> datetime:
         return datetime.fromtimestamp(self.datestamp)
 
 
-class ImageRecord(BaseCycleMetric):
+class ImageRecord(BaseCycleMetricRecord):
     channel_number: uint
     min_contrast: uint
     max_contrast: uint
 
 
-class IndexRecord(BaseCycleMetric):
+class IndexRecord(BaseCycleMetricRecord):
     pass
 
 
-class PhasingRecord(BaseCycleMetric):
+class PhasingRecord(BaseCycleMetricRecord):
     phasing_weight: float
     prephasing_weight: float
 
 
-class ErrorRecord(BaseCycleMetric):
+class ErrorRecord(BaseCycleMetricRecord):
     error_rate: float
     num_0_errors: uint
     num_1_errors: uint
@@ -107,7 +112,7 @@ def check_quality_record_length(v: list[int]) -> list[int]:
     return v
 
 
-class QualityRecord(BaseCycleMetric):
+class QualityRecord(BaseCycleMetricRecord):
     quality_bins: Annotated[list[int], AfterValidator(check_quality_record_length)]
 
     @model_serializer
@@ -125,6 +130,104 @@ class QualityRecord(BaseCycleMetric):
         }
 
 
-class TileMetricRecord(BaseMetric):
+class TileMetricRecord(BaseMetricRecord):
     metric_code: uint
     metric_value: float
+
+
+### Summary models
+
+
+class TileMetricCodes(object):
+    """Constants for metric codes used in a tile metrics data file.
+
+    Other codes:
+    (200 + (N - 1) * 2): phasing for read N
+    (201 + (N - 1) * 2): prephasing for read N
+    (300 + N - 1): percent aligned for read N
+    """
+
+    CLUSTER_DENSITY = 100  # K/mm2
+    CLUSTER_DENSITY_PASSING_FILTERS = 101  # K/mm2
+    CLUSTER_COUNT = 102
+    CLUSTER_COUNT_PASSING_FILTERS = 103
+
+
+class TileMetricSummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    density_count: int = 0
+    density_sum: float
+    total_clusters: float = 0.0
+    passing_clusters: float
+
+    @computed_field  # type: ignore
+    @cached_property
+    def pass_rate(self) -> float:
+        if self.total_clusters == 0:
+            return 0.0
+        return self.passing_clusters / self.total_clusters
+
+    @computed_field  # type: ignore
+    @cached_property
+    def cluster_density(self) -> float:
+        if self.density_count == 0:
+            return 0.0
+        return self.density_sum / self.density_count
+
+
+class QualityMetricsRunLengths(BaseModel):
+    last_forward_cycle: int
+    first_forward_cycle: int
+
+
+class QualityMetricsSummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    total_count: int = 0
+    total_reverse: int = 0
+    good_count: int
+    good_reverse: int
+
+    @computed_field  # type: ignore
+    @cached_property
+    def q30_forward(self) -> float:
+        if self.total_count == 0:
+            return 0.0
+        return self.good_count / float(self.total_count)
+
+    @computed_field  # type: ignore
+    @cached_property
+    def q30_reverse(self) -> float:
+        if self.total_reverse == 0:
+            return 0.0
+        return self.good_reverse / float(self.total_reverse)
+
+
+class ErrorMetricsRunLengths(BaseModel):
+    last_forward_cycle: int
+    first_forward_cycle: int
+
+
+class ErrorMetricsSummary(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    error_sum_forward: float
+    error_count_forward: int
+
+    error_sum_reverse: float
+    error_count_reverse: int
+
+    @computed_field  # type: ignore
+    @cached_property
+    def error_rate_forward(self) -> float:
+        if self.error_count_forward == 0:
+            return 0.0
+        return self.error_sum_forward / float(self.error_count_forward)
+
+    @computed_field  # type: ignore
+    @cached_property
+    def error_rate_reverse(self) -> float:
+        if self.error_count_reverse == 0:
+            return 0.0
+        return self.error_sum_reverse / float(self.error_count_reverse)

@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 pydantic = "^2.8.2"
+pandas = "^2.2.2"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -17,6 +18,7 @@ pytest-html = "^4.1.1"
 mypy = "^1.10.1"
 mypy-extensions = "^1.0.0"
 ruff = "^0.5.1"
+pandas-stubs = "^2.2.2.240603"
 
 [build-system]
 requires = ["poetry-core"]

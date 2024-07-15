@@ -2,28 +2,37 @@ import logging
 from enum import Enum
 from io import BufferedReader
 from pathlib import Path
-from typing import Callable, Iterator
+from typing import Callable, Iterable, Iterator
 
+import pandas as pd
 from pydantic import BaseModel
 
 from interop_reader.read_records import read_errors, read_quality, read_tiles
 
 from .models import (
-    BaseMetric,
+    BaseMetricRecord,
     CorrectedIntensityRecord,
     ErrorRecord,
     ExtractionRecord,
     ImageRecord,
     PhasingRecord,
+    QualityMetricsSummary,
     QualityRecord,
+    TileMetricCodes,
     TileMetricRecord,
+    TileMetricSummary,
 )
 
 
 class Metric(BaseModel):
+    """
+    Class that holds the valid filenames, the model that should be used
+    to hold data, and the method which to read the data into the model.
+    """
+
     files: list[str]
-    model: type[BaseMetric]
-    read_method: Callable[[BufferedReader], Iterator[BaseMetric]] | None = None
+    model: type[BaseMetricRecord]
+    read_method: Callable[[BufferedReader], Iterator[BaseMetricRecord]] | None = None
 
     def get_file(self, interop_dir: Path) -> Path:
         for filename in self.files:
@@ -33,7 +42,7 @@ class Metric(BaseModel):
             f"Could not find {'/'.join(self.files)} in {interop_dir}"
         )
 
-    def read_file(self, interop_dir: Path) -> list[BaseMetric]:
+    def read_file(self, interop_dir: Path) -> list[BaseMetricRecord]:
         if self.read_method is None:
             raise ReferenceError("No associated read method for this type!")
         with open(self.get_file(interop_dir), mode="rb") as f:
@@ -41,6 +50,10 @@ class Metric(BaseModel):
 
 
 class MetricFile(Enum):
+    """
+    Enum class pointing to Metric models.
+    """
+
     CORRECTED_INTENSITY_METRICS = Metric(
         files=[
             "CorrectedIntMetrics.bin",
@@ -86,11 +99,24 @@ class MetricFile(Enum):
     )
     SUMMARY_RUN = Metric(
         files=["SummaryRun.bin", "SummaryRunOut.bin"],
-        model=BaseMetric,
+        model=BaseMetricRecord,
     )
 
 
 class InterOpReader:
+    """
+    MiSeq Run InterOp reader, this class reads files stored in the ./InterOp
+    folder of a run.
+
+    When initialized this object performs some checks to ensure that its pointed
+    at the correct folder.
+
+    It checks that:
+    - An "InterOp" folder exists in the run folder,
+    - A SampleSheet.csv exists in the run folder,
+    - `qc_uploaded` and `needsprocessing` markers are present
+    """
+
     def __init__(self, run_dir: str | Path):
         if isinstance(run_dir, str):
             run_dir = Path(run_dir)
@@ -110,14 +136,17 @@ class InterOpReader:
         else:
             raise FileNotFoundError(f"InterOp directory does not exist in {run_dir}")
 
-        needs_processing_marker = run_dir / "needsprocessing"
+        needsprocessing_marker = run_dir / "needsprocessing"
         qc_uploaded_marker = run_dir / "qc_uploaded"
 
         self.run_name = run_dir.name
-        self.needs_processing = needs_processing_marker.exists()
+        self.needsprocessing = needsprocessing_marker.exists()
         self.qc_uploaded = qc_uploaded_marker.exists()
 
-    def check_files_present(self, metric_files: set[MetricFile]) -> bool:
+    def check_files_present(self, metric_files: Iterable[MetricFile]) -> bool:
+        """
+        Checks that all desired metric files are present in the InterOp directory.
+        """
         try:
             for metric in metric_files:
                 metric.value.get_file(self.interop_dir)
@@ -126,5 +155,90 @@ class InterOpReader:
             logging.error(e)
             return False
 
-    def read_file(self, metric: MetricFile) -> list[BaseMetric]:
+    def read_file(self, metric: MetricFile) -> list[BaseMetricRecord]:
+        """
+        Reads specified Metric file and returns a list of *MetricRecords, the
+        type of which is defiend in `MetricFile.model`.
+        """
         return metric.value.read_file(self.interop_dir)
+
+    def read_file_to_dataframe(self, metric: MetricFile) -> pd.DataFrame:
+        """
+        Reads the specified Metric file and returns a dataframe, based on the
+        `MetricFile.model`.
+        """
+        data = metric.value.read_file(self.interop_dir)
+        return pd.DataFrame(data=[el.model_dump() for el in data])
+
+    def summarize_tile_records(
+        self, records: list[TileMetricRecord]
+    ) -> TileMetricSummary:
+        """Summarize the records from a tile metrics file.
+
+        :param records: a sequence of dictionaries from read_tiles()
+        :param dict summary: a dictionary to hold the summary values:
+        cluster_density and pass_rate.
+        """
+        density_sum = 0.0
+        density_count = 0
+        total_clusters = 0.0
+        passing_clusters = 0.0
+
+        for record in records:
+            if record.metric_code == TileMetricCodes.CLUSTER_DENSITY:
+                density_sum += record.metric_value
+                density_count += 1
+            elif record.metric_code == TileMetricCodes.CLUSTER_COUNT:
+                total_clusters += record.metric_value
+            elif record.metric_code == TileMetricCodes.CLUSTER_COUNT_PASSING_FILTERS:
+                passing_clusters += record.metric_value
+
+        return TileMetricSummary(
+            density_count=density_count,
+            density_sum=density_sum,
+            total_clusters=total_clusters,
+            passing_clusters=passing_clusters,
+        )
+
+    def summarize_quality_records(
+        self,
+        records: list[QualityRecord],
+        read_lengths: tuple[int, int, int] | None = None,
+    ) -> QualityMetricsSummary:
+        """Calculate the portion of clusters and cycles with quality >= 30
+        (`quality_bins[29:]`).
+
+        :param records: a sequence of dictionaries like those yielded from
+        read_quality().
+        :param dict summary: a dictionary to hold the summary values:
+        q30_fwd and q30_rev. If read_lengths is None, only fwd_q30 will be set.
+        :param tuple read_lengths: a tuple of lengths for each type of read: forward,
+        indexes, and reverse.
+        """
+        total_count = 0
+        total_reverse = 0
+        good_count = 0
+        good_reverse = 0
+        last_forward_cycle = None
+        first_reverse_cycle = None
+        if read_lengths is not None:
+            last_forward_cycle = read_lengths[0]
+            first_reverse_cycle = sum(read_lengths[:-1]) + 1
+        for record in records:
+            cycle = record.cycle
+            cycle_clusters = sum(record.quality_bins)
+            cycle_good = sum(record.quality_bins[29:])
+
+            if last_forward_cycle is None or cycle <= last_forward_cycle:
+                total_count += cycle_clusters
+                good_count += cycle_good
+            elif first_reverse_cycle is not None and cycle >= first_reverse_cycle:
+                total_reverse += cycle_clusters
+                good_reverse += cycle_good
+
+        return QualityMetricsSummary(
+            total_count=total_count,
+            total_reverse=total_reverse,
+            good_count=good_count,
+            good_reverse=good_reverse,
+        )
