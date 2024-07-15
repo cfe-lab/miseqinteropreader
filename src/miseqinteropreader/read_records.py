@@ -3,7 +3,7 @@ from io import BufferedReader
 from struct import unpack
 from typing import Iterator
 
-from interop_reader.models import ErrorRecord, QualityRecord, TileMetricRecord
+from .models import ErrorRecord, QualityRecord, TileMetricRecord
 
 
 class BinaryFormat(Enum):

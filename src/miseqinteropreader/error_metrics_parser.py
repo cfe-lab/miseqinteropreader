@@ -5,7 +5,7 @@ import sys
 from itertools import groupby
 from operator import itemgetter
 
-from interop_reader.models import ErrorMetricsSummary
+from .models import ErrorMetricsSummary
 
 
 def _yield_cycles(records, read_lengths: tuple[int, int, int] | None = None):

@@ -2,7 +2,7 @@ from contextlib import nullcontext
 from typing import Any
 
 import pytest
-from interop_reader.models import QualityRecord
+from miseqinteropreader.models import QualityRecord
 from pydantic import ValidationError
 
 

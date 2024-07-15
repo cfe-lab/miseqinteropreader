@@ -35,7 +35,7 @@ build-backend = "poetry.core.masonry.api"
 pythonpath = ['src']
 minversion = "6.0"
 render_collapsed = "true"
-addopts = "-p no:cacheproviders -vra --strict-markers --cov=src/interop_reader --cov-report xml:coverage.xml --cov-report term --no-cov-on-fail"
+addopts = "-p no:cacheproviders -vra --strict-markers --cov=src/miseqinteropreader --cov-report xml:coverage.xml --cov-report term --no-cov-on-fail"
 filterwarnings = []
 
 [tool.ruff]

@@ -7,8 +7,6 @@ from typing import Callable, Iterable, Iterator
 import pandas as pd
 from pydantic import BaseModel
 
-from interop_reader.read_records import read_errors, read_quality, read_tiles
-
 from .models import (
     BaseMetricRecord,
     CorrectedIntensityRecord,
@@ -22,6 +20,7 @@ from .models import (
     TileMetricRecord,
     TileMetricSummary,
 )
+from .read_records import read_errors, read_quality, read_tiles
 
 
 class Metric(BaseModel):

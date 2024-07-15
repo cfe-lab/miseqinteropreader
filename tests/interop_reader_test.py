@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import pytest
-from interop_reader import InterOpReader, MetricFile
-from interop_reader.models import TileMetricRecord
+from miseqinteropreader import InterOpReader, MetricFile
+from miseqinteropreader.models import TileMetricRecord
 
 
 def test_run_dir_missing(tmp_path: Path):

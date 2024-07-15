@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from interop_reader.models import ErrorRecord, TileMetricRecord
-from interop_reader.read_records import read_tiles
+from miseqinteropreader.models import ErrorRecord, TileMetricRecord
+from miseqinteropreader.read_records import read_tiles
 
 # import pytest
 

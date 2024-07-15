@@ -4,8 +4,8 @@ from pathlib import Path
 from random import Random
 
 import pytest
-from interop_reader import InterOpReader, MetricFile
-from interop_reader.models import QualityRecord, TileMetricRecord
+from miseqinteropreader import InterOpReader, MetricFile
+from miseqinteropreader.models import QualityRecord, TileMetricRecord
 
 
 @pytest.fixture(scope="session")

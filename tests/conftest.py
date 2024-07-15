@@ -3,7 +3,7 @@ from random import Random
 from struct import pack
 
 import pytest
-from interop_reader.read_records import BinaryFormat
+from miseqinteropreader.read_records import BinaryFormat
 
 
 @pytest.fixture
