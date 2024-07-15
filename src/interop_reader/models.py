@@ -25,7 +25,7 @@ class BaseMetric(BaseModel):
     tile: uint
 
     def __eq__(self, other: Any) -> bool:
-        if type(self) == type(other):
+        if isinstance(other, type(self)):
             other_dict = other.model_dump()
             self_dict = self.model_dump()
             comparison_array = []
