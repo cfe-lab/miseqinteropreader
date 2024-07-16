@@ -2,8 +2,9 @@ from contextlib import nullcontext
 from typing import Any
 
 import pytest
-from miseqinteropreader.models import QualityRecord
 from pydantic import ValidationError
+
+from miseqinteropreader.models import QualityRecord
 
 
 @pytest.mark.parametrize(
@@ -25,9 +26,10 @@ def test_quality_record_model(record_length: int, exp_raises: Any):
         assert "cycle" in record
 
         # Check that we do have a flat model
-        for i in range(record_length):
-            assert f"{i:02}" in record
+        for i in range(1, 1+record_length):
+            assert f"q{i:02}" in record
 
         for k, v in record.items():
             assert isinstance(k, str)
+            assert isinstance(v, int)
             assert isinstance(v, int)
