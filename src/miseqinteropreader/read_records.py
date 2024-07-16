@@ -3,7 +3,12 @@ from io import BufferedReader
 from struct import unpack
 from typing import Iterator
 
-from .models import ErrorRecord, QualityRecord, TileMetricRecord
+from .models import (
+    CorrectedIntensityRecord,
+    ErrorRecord,
+    QualityRecord,
+    TileMetricRecord,
+)
 
 
 class BinaryFormat(Enum):
@@ -11,7 +16,7 @@ class BinaryFormat(Enum):
     ERROR = ("<HHHfLLLLL", 30, 3)
     TILE = ("<HHHf", 10, 2)
     QUALITY = ("<HHH" + "L" * 50, 206, 4)
-    CORRECTEDINTENSITY = ("<HHH" + "H" * 9 + "L" * 5 + "f", 48, 2)
+    CORRECTEDINTENSITY = ("<HHH" + "H" * 9 + "I" * 5 + "f", 48, 2)
     EXTRACTION = ("<HHHffffHHHHQ", 38, 2)
     IMAGE = ("<HHHHHH", 12, 1)
     PHASING = ("<HHHff", 14, 1)
@@ -131,4 +136,62 @@ def read_quality(data_file: BufferedReader) -> Iterator[QualityRecord]:
             tile=fields[1],
             cycle=fields[2],
             quality_bins=list(fields[3:]),
+        )
+
+
+def read_corrected_intensities(
+    data_file: BufferedReader,
+) -> Iterator[CorrectedIntensityRecord]:
+    """Read a quality metrics data file.
+
+    :param file data_file: an open file-like object. Needs to have a two-byte
+    header with the file version and the length of each record, followed by the
+    records.
+    :return: an iterator over the records of data in the file. Each record is a
+    dictionary with the following keys:
+    - lane [uint16]
+    - tile [uint16]
+    - cycle [uint16]
+    - average cycle intensity [uint16]
+    - average corrected intensity for channel A [uint16]
+    - average corrected intensity for channel C [uint16]
+    - average corrected intensity for channel G [uint16]
+    - average corrected intensity for channel T [uint16]
+    - average corrected int for called clusters for base A [uint16]
+    - average corrected int for called clusters for base C [uint16]
+    - average corrected int for called clusters for base G [uint16]
+    - average corrected int for called clusters for base T [uint16]
+    - average corrected int for No Call [uint32]
+    - average number of base calls for base A [uint32]
+    - average number of base calls for base C [uint32]
+    - average number of base calls for base G [uint32]
+    - average number of base calls for base T [uint32]
+    - signal to noise ratio [float32]
+    """
+    for data in read_records(
+        data_file, min_version=BinaryFormat.CORRECTEDINTENSITY.min_version
+    ):
+        fields = unpack(
+            BinaryFormat.CORRECTEDINTENSITY.format,
+            data[: BinaryFormat.CORRECTEDINTENSITY.length],
+        )
+        yield CorrectedIntensityRecord(
+            lane=fields[0],
+            tile=fields[1],
+            cycle=fields[2],
+            avg_cycle_intensity=fields[3],
+            avg_corrected_intensity_a=fields[4],
+            avg_corrected_intensity_c=fields[5],
+            avg_corrected_intensity_g=fields[6],
+            avg_corrected_intensity_t=fields[7],
+            avg_corrected_cluster_intensity_a=fields[8],
+            avg_corrected_cluster_intensity_c=fields[9],
+            avg_corrected_cluster_intensity_g=fields[10],
+            avg_corrected_cluster_intensity_t=fields[11],
+            num_base_calls_none=fields[12],
+            num_base_calls_a=fields[13],
+            num_base_calls_c=fields[14],
+            num_base_calls_g=fields[15],
+            num_base_calls_t=fields[16],
+            snr=fields[17],
         )

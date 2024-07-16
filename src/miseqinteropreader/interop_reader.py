@@ -20,7 +20,12 @@ from .models import (
     TileMetricRecord,
     TileMetricSummary,
 )
-from .read_records import read_errors, read_quality, read_tiles
+from .read_records import (
+    read_corrected_intensities,
+    read_errors,
+    read_quality,
+    read_tiles,
+)
 
 
 class Metric(BaseModel):
@@ -59,6 +64,7 @@ class MetricFile(Enum):
             "CorrectedIntMetricsOut.bin",
         ],
         model=CorrectedIntensityRecord,
+        read_method=read_corrected_intensities,
     )
     ERROR_METRICS = Metric(
         files=["ErrorMetrics.bin", "ErrorMetricsOut.bin"],

@@ -4,6 +4,7 @@ from pathlib import Path
 from random import Random
 
 import pytest
+
 from miseqinteropreader import InterOpReader, MetricFile
 from miseqinteropreader.models import QualityRecord, TileMetricRecord
 
@@ -124,6 +125,10 @@ class TestIntegrations:
             pytest.param(
                 MetricFile.QUALITY_METRICS, id=MetricFile.QUALITY_METRICS.name
             ),
+            pytest.param(
+                MetricFile.CORRECTED_INTENSITY_METRICS,
+                id=MetricFile.CORRECTED_INTENSITY_METRICS.name,
+            ),
         ],
     )
     def test_summarize_tile_metrics_as_df(
@@ -145,7 +150,7 @@ class TestIntegrations:
 
         random_rows = []
         rng = Random()
-        for i in range(min(1, int(len(results) * 0.1))):
+        for i in range(50):
             random_rows.append(rng.randint(0, len(results) - 1))
 
         for row_id in random_rows:
