@@ -138,7 +138,7 @@ class QualityRecord(BaseCycleMetricRecord):
             "lane": self.lane,
             "tile": self.tile,
             "cycle": self.cycle,
-            **{f"{k:02}": v for k, v in enumerate(self.quality_bins)},
+            **{f"q{k:02}": v for k, v in enumerate(self.quality_bins, start=1)},
         }
 
 
