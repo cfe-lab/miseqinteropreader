@@ -23,6 +23,7 @@ from .models import (
 from .read_records import (
     read_corrected_intensities,
     read_errors,
+    read_extractions,
     read_quality,
     read_tiles,
 )
@@ -79,6 +80,7 @@ class MetricFile(Enum):
     EXTRACTION_METRICS = Metric(
         files=["ExtractionMetrics.bin", "ExtractionMetricsOut.bin"],
         model=ExtractionRecord,
+        read_method=read_extractions,
     )
     IMAGE_METRICS = Metric(
         files=["ImageMetrics.bin", "ImageMetricsOut.bin"],

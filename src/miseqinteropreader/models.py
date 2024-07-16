@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import cached_property
 from math import isclose
 from typing import Annotated, Any
@@ -80,7 +80,19 @@ class ExtractionRecord(BaseCycleMetricRecord):
     @computed_field  # type: ignore
     @cached_property
     def datetime(self) -> datetime:
-        return datetime.fromtimestamp(self.datestamp)
+        """
+        this is a 64 bit integer,
+        - the first 2 bits are 'kind', we just discard these bits.
+        - the last 62 bits are the number of 100ns since midnight Jan 1, 0001
+        (0001 is not a typo)
+
+        Reference: https://github.com/nthmost/illuminate/blob/master/illuminate/extraction_metrics.py#L83C42-L83C53
+        """
+        bitmask = sum([2**i for i in range(62)])
+        ns100intervals = self.datestamp & bitmask
+        microseconds = timedelta(microseconds=ns100intervals / 10)
+        datetime_of_record = datetime(1, 1, 1) + microseconds
+        return datetime_of_record
 
 
 class ImageRecord(BaseCycleMetricRecord):

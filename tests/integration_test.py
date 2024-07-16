@@ -129,6 +129,10 @@ class TestIntegrations:
                 MetricFile.CORRECTED_INTENSITY_METRICS,
                 id=MetricFile.CORRECTED_INTENSITY_METRICS.name,
             ),
+            pytest.param(
+                MetricFile.EXTRACTION_METRICS,
+                id=MetricFile.EXTRACTION_METRICS.name,
+            ),
         ],
     )
     def test_summarize_tile_metrics_as_df(

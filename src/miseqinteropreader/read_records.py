@@ -6,6 +6,7 @@ from typing import Iterator
 from .models import (
     CorrectedIntensityRecord,
     ErrorRecord,
+    ExtractionRecord,
     QualityRecord,
     TileMetricRecord,
 )
@@ -142,7 +143,7 @@ def read_quality(data_file: BufferedReader) -> Iterator[QualityRecord]:
 def read_corrected_intensities(
     data_file: BufferedReader,
 ) -> Iterator[CorrectedIntensityRecord]:
-    """Read a quality metrics data file.
+    """Read a Corrected Intensity Metrics data file.
 
     :param file data_file: an open file-like object. Needs to have a two-byte
     header with the file version and the length of each record, followed by the
@@ -194,4 +195,50 @@ def read_corrected_intensities(
             num_base_calls_g=fields[15],
             num_base_calls_t=fields[16],
             snr=fields[17],
+        )
+
+
+def read_extractions(
+    data_file: BufferedReader,
+) -> Iterator[ExtractionRecord]:
+    """Read an Extraction Metrics data file.
+
+    :param file data_file: an open file-like object. Needs to have a two-byte
+    header with the file version and the length of each record, followed by the
+    records.
+    :return: an iterator over the records of data in the file. Each record is a
+    dictionary with the following keys:
+    - lane [uint16]
+    - tile [uint16]
+    - cycle [uint16]
+    - focus for channel A [float32]
+    - focus for channel C [float32]
+    - focus for channel G [float32]
+    - focus for channel T [float32]
+    - max intensity for channel A [uint16]
+    - max intensity for channel C [uint16]
+    - max intensity for channel G [uint16]
+    - max intensity for channel T [uint16]
+    - date time stamp [uint64]
+    """
+    for data in read_records(
+        data_file, min_version=BinaryFormat.EXTRACTION.min_version
+    ):
+        fields = unpack(
+            BinaryFormat.EXTRACTION.format,
+            data[: BinaryFormat.EXTRACTION.length],
+        )
+        yield ExtractionRecord(
+            lane=fields[0],
+            tile=fields[1],
+            cycle=fields[2],
+            focus_a=fields[3],
+            focus_c=fields[4],
+            focus_g=fields[5],
+            focus_t=fields[6],
+            max_intensity_a=fields[7],
+            max_intensity_c=fields[8],
+            max_intensity_g=fields[9],
+            max_intensity_t=fields[10],
+            datestamp=fields[11],
         )
