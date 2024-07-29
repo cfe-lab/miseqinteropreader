@@ -9,10 +9,13 @@ from pydantic import BaseModel
 
 from .models import (
     BaseMetricRecord,
+    BaseRecord,
+    CollapsedQRecord,
     CorrectedIntensityRecord,
     ErrorRecord,
     ExtractionRecord,
     ImageRecord,
+    IndexRecord,
     PhasingRecord,
     QualityMetricsSummary,
     QualityRecord,
@@ -21,9 +24,13 @@ from .models import (
     TileMetricSummary,
 )
 from .read_records import (
+    read_collapsed_q_metric,
     read_corrected_intensities,
     read_errors,
     read_extractions,
+    read_images,
+    read_index,
+    read_phasing,
     read_quality,
     read_tiles,
 )
@@ -36,8 +43,8 @@ class Metric(BaseModel):
     """
 
     files: list[str]
-    model: type[BaseMetricRecord]
-    read_method: Callable[[BufferedReader], Iterator[BaseMetricRecord]] | None = None
+    model: type[BaseRecord]
+    read_method: Callable[[BufferedReader], Iterator[BaseRecord]] | None = None
 
     def get_file(self, interop_dir: Path) -> Path:
         for filename in self.files:
@@ -47,7 +54,7 @@ class Metric(BaseModel):
             f"Could not find {'/'.join(self.files)} in {interop_dir}"
         )
 
-    def read_file(self, interop_dir: Path) -> list[BaseMetricRecord]:
+    def read_file(self, interop_dir: Path) -> list[BaseRecord]:
         if self.read_method is None:
             raise ReferenceError("No associated read method for this type!")
         with open(self.get_file(interop_dir), mode="rb") as f:
@@ -85,10 +92,12 @@ class MetricFile(Enum):
     IMAGE_METRICS = Metric(
         files=["ImageMetrics.bin", "ImageMetricsOut.bin"],
         model=ImageRecord,
+        read_method=read_images,
     )
     PHASING_METRICS = Metric(
         files=["EmpiricalPhasingMetrics.bin", "EmpiricalPhasingMetricsOut.bin"],
         model=PhasingRecord,
+        read_method=read_phasing,
     )
     QUALITY_METRICS = Metric(
         files=["QMetrics.bin", "QMetricsOut.bin"],
@@ -102,7 +111,13 @@ class MetricFile(Enum):
     )
     COLLAPSED_Q_METRICS = Metric(
         files=["QMetrics2030.bin", "QMetrics2030Out.bin"],
-        model=QualityRecord,
+        model=CollapsedQRecord,
+        read_method=read_collapsed_q_metric,
+    )
+    INDEX_METRICS = Metric(
+        files=["IndexMetrics.bin", "IndexMetricsOut.bin"],
+        model=IndexRecord,
+        read_method=read_index,
     )
     SUMMARY_RUN = Metric(
         files=["SummaryRun.bin", "SummaryRunOut.bin"],
@@ -162,7 +177,7 @@ class InterOpReader:
             logging.error(e)
             return False
 
-    def read_file(self, metric: MetricFile) -> list[BaseMetricRecord]:
+    def read_file(self, metric: MetricFile) -> list[BaseRecord]:
         """
         Reads specified Metric file and returns a list of *MetricRecords, the
         type of which is defiend in `MetricFile.model`.

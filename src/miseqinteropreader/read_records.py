@@ -1,12 +1,16 @@
 from enum import Enum
 from io import BufferedReader
 from struct import unpack
-from typing import Iterator
+from typing import Any, Iterator
 
 from .models import (
+    CollapsedQRecord,
     CorrectedIntensityRecord,
     ErrorRecord,
     ExtractionRecord,
+    ImageRecord,
+    IndexRecord,
+    PhasingRecord,
     QualityRecord,
     TileMetricRecord,
 )
@@ -28,7 +32,9 @@ class BinaryFormat(Enum):
         self.min_version = min_version
 
 
-def read_records(data_file: BufferedReader, min_version: int) -> Iterator[bytes]:
+def read_records(
+    data_file: BufferedReader, min_version: int
+) -> Iterator[tuple[bytes, int]]:
     """Read records from an Illumina Interop file.
     :param file data_file: an open file-like object. Needs to have a two-byte
     header with the file version and the length of each record, followed by the
@@ -40,7 +46,7 @@ def read_records(data_file: BufferedReader, min_version: int) -> Iterator[bytes]
     header = data_file.read(2)
     version, record_length = unpack(BinaryFormat.HEADER.format, header)
     if version < min_version:
-        raise IOError(
+        raise ValueError(
             "File version {} is less than minimum version {} in {}.".format(
                 version, min_version, data_file.name
             )
@@ -51,12 +57,12 @@ def read_records(data_file: BufferedReader, min_version: int) -> Iterator[bytes]
         if read_length == 0:
             break
         if read_length < record_length:
-            raise IOError(
+            raise RuntimeError(
                 "Partial record of length {} found in {}.".format(
                     read_length, data_file.name
                 )
             )
-        yield data
+        yield data, record_length
 
 
 def read_errors(data_file: BufferedReader) -> Iterator[ErrorRecord]:
@@ -77,7 +83,7 @@ def read_errors(data_file: BufferedReader) -> Iterator[ErrorRecord]:
     - num_3_errors [uint32]
     - num_4_errors [uint32]
     """
-    for data in read_records(data_file, min_version=BinaryFormat.ERROR.min_version):
+    for data, _ in read_records(data_file, min_version=BinaryFormat.ERROR.min_version):
         fields = unpack(BinaryFormat.ERROR.format, data[: BinaryFormat.ERROR.length])
         yield ErrorRecord(
             lane=fields[0],
@@ -105,13 +111,65 @@ def read_tiles(data_file: BufferedReader) -> Iterator[TileMetricRecord]:
     - metric_code [uint16]
     - metric_value [float32]
     """
-    for data in read_records(data_file, min_version=BinaryFormat.TILE.min_version):
+    for data, _ in read_records(data_file, min_version=BinaryFormat.TILE.min_version):
         fields = unpack(BinaryFormat.TILE.format, data[: BinaryFormat.TILE.length])
         yield TileMetricRecord(
             lane=fields[0],
             tile=fields[1],
             metric_code=fields[2],
             metric_value=fields[3],
+        )
+
+
+def read_images(data_file: BufferedReader) -> Iterator[ImageRecord]:
+    """Read a image metrics metrics data file.
+
+    :param file data_file: an open file-like object. Needs to have a two-byte
+    header with the file version and the length of each record, followed by the
+    records.
+    :return: an iterator over the records of data in the file. Each record is a
+    dictionary with the following keys:
+    - lane [uint16]
+    - tile [uint16]
+    - cycle [uint16]
+    - channel_number [uint16]
+    - minimum_contrast [uint16]
+    - maximum_contrast [uint16]
+    """
+    for data, _ in read_records(data_file, min_version=BinaryFormat.TILE.min_version):
+        fields = unpack(BinaryFormat.IMAGE.format, data[: BinaryFormat.TILE.length])
+        yield ImageRecord(
+            lane=fields[0],
+            tile=fields[1],
+            cycle=fields[2],
+            channel_number=fields[3],
+            min_contrast=fields[4],
+            max_contrast=fields[5],
+        )
+
+
+def read_phasing(data_file: BufferedReader) -> Iterator[PhasingRecord]:
+    """Read a phasing metrics metrics data file.
+
+    :param file data_file: an open file-like object. Needs to have a two-byte
+    header with the file version and the length of each record, followed by the
+    records.
+    :return: an iterator over the records of data in the file. Each record is a
+    dictionary with the following keys:
+    - lane [uint16]
+    - tile [uint16]
+    - cycle [uint16]
+    - phasing_weight [float32]
+    - prephasing weight [float32]
+    """
+    for data, _ in read_records(data_file, min_version=BinaryFormat.TILE.min_version):
+        fields = unpack(BinaryFormat.PHASING.format, data[: BinaryFormat.TILE.length])
+        yield PhasingRecord(
+            lane=fields[0],
+            tile=fields[1],
+            cycle=fields[2],
+            phasing_weight=fields[3],
+            prephasing_weight=fields[4],
         )
 
 
@@ -128,7 +186,9 @@ def read_quality(data_file: BufferedReader) -> Iterator[QualityRecord]:
     - cycle [uint16]
     - quality_bins [list of 50 uint32, representing quality 1 to 50]
     """
-    for data in read_records(data_file, min_version=BinaryFormat.QUALITY.min_version):
+    for data, _ in read_records(
+        data_file, min_version=BinaryFormat.QUALITY.min_version
+    ):
         fields = unpack(
             BinaryFormat.QUALITY.format, data[: BinaryFormat.QUALITY.length]
         )
@@ -137,6 +197,38 @@ def read_quality(data_file: BufferedReader) -> Iterator[QualityRecord]:
             tile=fields[1],
             cycle=fields[2],
             quality_bins=list(fields[3:]),
+        )
+
+
+def read_collapsed_q_metric(data_file: BufferedReader) -> Iterator[CollapsedQRecord]:
+    """Read a Collapsed Q-metrics data file.
+
+    :param file data_file: an open file-like object. Needs to have a two-byte
+    header with the file version and the length of each record, followed by the
+    records.
+    :return: an iterator over the records of data in the file. Each record is a
+    dictionary with the following keys:
+    - lane [uint16]
+    - tile [uint16]
+    - cycle [uint16]
+    - q20 [uint32]
+    - q30 [uint32]
+    - total_count [uint32]
+    - median_score [uint32]
+    """
+    # NOTE: this is the only one we need to dynamically check the record length for
+    for data, record_length in read_records(
+        data_file, min_version=BinaryFormat.COLLAPSEDQ.min_version
+    ):
+        fields = unpack(BinaryFormat.COLLAPSEDQ.format, data[:record_length])
+        yield CollapsedQRecord(
+            lane=fields[0],
+            tile=fields[1],
+            cycle=fields[2],
+            q20=fields[3],
+            q30=fields[4],
+            total_count=fields[5],
+            median_score=fields[6],
         )
 
 
@@ -169,7 +261,7 @@ def read_corrected_intensities(
     - average number of base calls for base T [uint32]
     - signal to noise ratio [float32]
     """
-    for data in read_records(
+    for data, _ in read_records(
         data_file, min_version=BinaryFormat.CORRECTEDINTENSITY.min_version
     ):
         fields = unpack(
@@ -221,7 +313,7 @@ def read_extractions(
     - max intensity for channel T [uint16]
     - date time stamp [uint64]
     """
-    for data in read_records(
+    for data, _ in read_records(
         data_file, min_version=BinaryFormat.EXTRACTION.min_version
     ):
         fields = unpack(
@@ -241,4 +333,63 @@ def read_extractions(
             max_intensity_g=fields[9],
             max_intensity_t=fields[10],
             datestamp=fields[11],
+        )
+
+
+def read_index(data_file: BufferedReader) -> Iterator[IndexRecord]:
+    """Read records from an Illumina Interop file.
+    :param file data_file: an open file-like object. Needs to have a one-byte
+    header with the file version and the length of each record, followed by the
+    records.
+    :param int min_version: the minimum accepted file version.
+    :return: an iterator over the records in the file. Each record will be a raw
+    byte string of the length from the header.
+    """
+
+    header = data_file.read(1)
+    version = unpack("<B", header)[0]
+    if version < 1:
+        raise ValueError(
+            "File version {} is less than minimum version {} in {}.".format(
+                version, 1, data_file.name
+            )
+        )
+    while True:
+        metric = data_file.read(6)
+        lane, tile, read = unpack("<HHH", metric)
+
+        data: dict[str, dict[str, Any]] = {}
+
+        # unfortunately the cluster_count property is embedded in the middle of
+        # these other difficult to read bytes.
+        for name in ["index", None, "sample", "project"]:
+            if name is None:
+                if version == 1:
+                    index_cluster_count_bytes = data_file.read(4)
+                    data["cluster_count"] = unpack("<I", index_cluster_count_bytes)[0]
+                else:
+                    index_cluster_count_bytes = data_file.read(8)
+                    data["cluster_count"] = unpack("<Q", index_cluster_count_bytes)[0]
+            else:
+                data[name] = {}
+                data[name]["length_bytes"] = data_file.read(2)
+                data[name]["length"] = unpack("<H", data[name]["length_bytes"])[0]
+                data[name]["name_bytes"] = data_file.read(data[name]["length"])
+                data[name]["name"] = unpack(
+                    f"<{data[name]['length']}s", data[name]["name_bytes"]
+                )[0]
+
+        if len(metric) == 0:
+            break
+        yield IndexRecord(
+            lane_number=lane,
+            tile_number=tile,
+            read_number=read,
+            index_name=data["index"]["name"],
+            index_name_length=data["index"]["length"],
+            index_cluster_count=data["cluster_count"],
+            sample_name=data["sample"]["name"],
+            sample_name_length=data["sample"]["length"],
+            project_name=data["project"]["name"],
+            project_name_length=data["project"]["length"],
         )

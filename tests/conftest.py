@@ -33,6 +33,10 @@ def generate_numeric_sequence(binary_format: str) -> list[int | float]:
         elif char == "f":
             outlist.append(rng.random())
         elif char == "L":
+            outlist.append(rng.randint(0, 2**32 - 1))
+        elif char == "I":
+            outlist.append(rng.randint(0, 2**32 - 1))
+        elif char == "Q":
             outlist.append(rng.randint(0, 2**64 - 1))
     return outlist
 

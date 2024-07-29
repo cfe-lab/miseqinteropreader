@@ -7,26 +7,51 @@ from pydantic import (
     AfterValidator,
     BaseModel,
     ConfigDict,
+    Field,
     computed_field,
     model_serializer,
 )
 
 
-def assert_unsigned(v: int) -> int:
-    assert v >= 0, "Integer must be >=0"
+def assert_uint8(v: int) -> int:
+    assert 0 <= v < 2**8, f"Integer must be between 0 and {2**8-1}"
     return v
 
 
-uint = Annotated[int, AfterValidator(assert_unsigned)]
+def assert_uint16(v: int) -> int:
+    assert 0 <= v < 2**16, f"Integer must be between 0 and {2**16-1}"
+    return v
+
+
+def assert_uint32(v: int) -> int:
+    assert 0 <= v < 2**32, f"Integer must be between 0 and {2**32-1}"
+    return v
+
+
+def assert_uint64(v: int) -> int:
+    assert 0 <= v < 2**64, f"Integer must be between 0 and {2**64-1}"
+    return v
+
+
+def value_is_non_negative(v: float | int) -> float | int:
+    assert v >= 0, "This value must be positive"
+    return v
+
+
+uint8 = Annotated[int, AfterValidator(assert_uint8)]
+uint16 = Annotated[int, AfterValidator(assert_uint16)]
+uint32 = Annotated[int, AfterValidator(assert_uint32)]
+uint64 = Annotated[int, AfterValidator(assert_uint64)]
+float_positive = Annotated[float, AfterValidator(value_is_non_negative)]
 
 
 ###### Row record models
 
 
-class BaseMetricRecord(BaseModel):
+class BaseRecord(BaseModel):
+    """Base record for all interop files"""
+
     model_config = ConfigDict(frozen=True)
-    lane: uint
-    tile: uint
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, type(self)):
@@ -44,38 +69,60 @@ class BaseMetricRecord(BaseModel):
         return False
 
 
+class BaseMetricRecord(BaseRecord):
+    """
+    Base class for metrics taken from the Illumina interop folder
+    """
+
+    model_config = ConfigDict(frozen=True)
+    lane: uint16
+    tile: uint16
+
+
 class BaseCycleMetricRecord(BaseMetricRecord):
-    cycle: uint
+    """
+    Base class for a cycle metric
+    """
+
+    cycle: uint16
 
 
 class CorrectedIntensityRecord(BaseCycleMetricRecord):
-    avg_cycle_intensity: uint
-    avg_corrected_intensity_a: uint
-    avg_corrected_intensity_c: uint
-    avg_corrected_intensity_g: uint
-    avg_corrected_intensity_t: uint
-    avg_corrected_cluster_intensity_a: uint
-    avg_corrected_cluster_intensity_c: uint
-    avg_corrected_cluster_intensity_g: uint
-    avg_corrected_cluster_intensity_t: uint
-    num_base_calls_none: uint
-    num_base_calls_a: uint
-    num_base_calls_c: uint
-    num_base_calls_g: uint
-    num_base_calls_t: uint
+    """
+    https://illumina.github.io/interop/corrected_v2.html
+    """
+
+    avg_cycle_intensity: uint16
+    avg_corrected_intensity_a: uint16
+    avg_corrected_intensity_c: uint16
+    avg_corrected_intensity_g: uint16
+    avg_corrected_intensity_t: uint16
+    avg_corrected_cluster_intensity_a: uint16
+    avg_corrected_cluster_intensity_c: uint16
+    avg_corrected_cluster_intensity_g: uint16
+    avg_corrected_cluster_intensity_t: uint16
+    num_base_calls_none: uint32
+    num_base_calls_a: uint32
+    num_base_calls_c: uint32
+    num_base_calls_g: uint32
+    num_base_calls_t: uint32
     snr: float
 
 
 class ExtractionRecord(BaseCycleMetricRecord):
+    """
+    https://illumina.github.io/interop/extraction_v2.html
+    """
+
     focus_a: float
     focus_c: float
     focus_g: float
     focus_t: float
-    max_intensity_a: uint
-    max_intensity_c: uint
-    max_intensity_g: uint
-    max_intensity_t: uint
-    datestamp: uint
+    max_intensity_a: uint16
+    max_intensity_c: uint16
+    max_intensity_g: uint16
+    max_intensity_t: uint16
+    datestamp: uint64
 
     @computed_field  # type: ignore
     @cached_property
@@ -96,27 +143,63 @@ class ExtractionRecord(BaseCycleMetricRecord):
 
 
 class ImageRecord(BaseCycleMetricRecord):
-    channel_number: uint
-    min_contrast: uint
-    max_contrast: uint
+    """
+    https://illumina.github.io/interop/image_v1.html
+    """
+
+    channel_number: uint16
+    min_contrast: uint16
+    max_contrast: uint16
 
 
-class IndexRecord(BaseCycleMetricRecord):
-    pass
+class IndexRecord(BaseRecord):
+    lane_number: uint16
+    tile_number: uint16
+    read_number: uint16
+    index_name_length: uint16
+    index_cluster_count: uint64
+    sample_name_length: uint16
+    project_name_length: uint16
+
+    index_name: str
+    sample_name: str
+    project_name: str
+
+
+class SummaryRecord(BaseRecord):
+    """
+    https://illumina.github.io/interop/summary_run_v1.html
+
+    Heads up the formatting on this class is broken.
+    """
+
+    dummy: uint16
+    occupancy_proxy_cluster_count: float
+    raw_cluster_count: float
+    occupancy_cluster_count: float
+    pf_cluster_count: float
 
 
 class PhasingRecord(BaseCycleMetricRecord):
+    """
+    https://illumina.github.io/interop/phasing_v1.html
+    """
+
     phasing_weight: float
     prephasing_weight: float
 
 
 class ErrorRecord(BaseCycleMetricRecord):
+    """
+    https://illumina.github.io/interop/error_v3.html
+    """
+
     error_rate: float
-    num_0_errors: uint
-    num_1_errors: uint
-    num_2_errors: uint
-    num_3_errors: uint
-    num_4_errors: uint
+    num_0_errors: uint32
+    num_1_errors: uint32
+    num_2_errors: uint32
+    num_3_errors: uint32
+    num_4_errors: uint32
 
 
 def check_quality_record_length(v: list[int]) -> list[int]:
@@ -125,6 +208,10 @@ def check_quality_record_length(v: list[int]) -> list[int]:
 
 
 class QualityRecord(BaseCycleMetricRecord):
+    """
+    https://illumina.github.io/interop/q_v4.html
+    """
+
     quality_bins: Annotated[list[int], AfterValidator(check_quality_record_length)]
 
     @model_serializer
@@ -143,8 +230,25 @@ class QualityRecord(BaseCycleMetricRecord):
 
 
 class TileMetricRecord(BaseMetricRecord):
-    metric_code: uint
+    """
+    https://illumina.github.io/interop/tile_v2.html
+    https://illumina.github.io/interop/extended_tile_v1.html
+
+    """
+
+    metric_code: uint16
     metric_value: float
+
+
+class CollapsedQRecord(BaseCycleMetricRecord):
+    """
+    https://illumina.github.io/interop/q_collapsed_v2.html
+    """
+
+    q20: uint32
+    q30: uint32
+    total_count: uint32
+    median_score: uint32
 
 
 ### Summary models
@@ -168,9 +272,9 @@ class TileMetricCodes(object):
 class TileMetricSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    density_count: int = 0
+    density_count: int = Field(ge=0)
     density_sum: float
-    total_clusters: float = 0.0
+    total_clusters: float = Field(ge=0)
     passing_clusters: float
 
     @computed_field  # type: ignore
@@ -196,8 +300,8 @@ class QualityMetricsRunLengths(BaseModel):
 class QualityMetricsSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    total_count: int = 0
-    total_reverse: int = 0
+    total_count: int = Field(ge=0)
+    total_reverse: int = Field(ge=0)
     good_count: int
     good_reverse: int
 
@@ -225,10 +329,10 @@ class ErrorMetricsSummary(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     error_sum_forward: float
-    error_count_forward: int
+    error_count_forward: int = Field(ge=0)
 
     error_sum_reverse: float
-    error_count_reverse: int
+    error_count_reverse: int = Field(ge=0)
 
     @computed_field  # type: ignore
     @cached_property
