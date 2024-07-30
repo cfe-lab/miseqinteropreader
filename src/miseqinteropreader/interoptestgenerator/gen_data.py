@@ -4,6 +4,7 @@ from random import Random
 from struct import pack
 from typing import Any, Iterator
 
+from miseqinteropreader.interop_reader import Metric, MetricFile
 from miseqinteropreader.read_records import BinaryFormat
 
 
@@ -12,6 +13,7 @@ class BaseGenerator:
         self._binary_format = BinaryFormat.HEADER
         self.header_format = "!BB"
         self.header_values = (1, 1)
+        self.metricfile = MetricFile.SUMMARY_RUN.value
 
     def _generate_numeric_sequence(
         self, binary_format: str, rng: Random
@@ -54,7 +56,11 @@ class BaseGenerator:
     def write_file(
         self, file: Path, header: bytes | None, binary_data: list[bytes] | bytes
     ) -> Path:
-        with open(file, mode="wb") as f:
+        filename = file
+        if filename.is_dir():
+            filename = file / self.metricfile.files[0]
+
+        with open(filename, mode="wb") as f:
             if header is None:
                 f.write(self.gen_header())
             else:
@@ -72,6 +78,7 @@ class IndexRecordGenerator(BaseGenerator):
     def __init__(self):
         self.header_format = "!B"
         self.header_values = (1,) # type: ignore
+        self.metricfile = MetricFile.INDEX_METRICS.value
 
     def generate_row(self, rand: Random) -> list[int | bytes]:
         sample_name = "".join(
@@ -119,10 +126,7 @@ class QualityRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
-
-    def generate_row(self, rand: Random) -> list[int | float]:
-        return self._generate_numeric_sequence(self._binary_format.format, rand)
-
+        self.metricfile = MetricFile.QUALITY_METRICS.value
 
 class ErrorRecordGenerator(BaseGenerator):
     def __init__(self):
@@ -132,14 +136,7 @@ class ErrorRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
-
-    def generate_row(self, rand: Random) -> list[int | float]:
-        return self._generate_numeric_sequence(self._binary_format.format, rand)
-
-    def generate_binary(self, row_data: list[list[Any]]) -> Iterator[bytes]:
-        for row in row_data:
-            yield pack(self._binary_format.format, *row)
-
+        self.metricfile = MetricFile.ERROR_METRICS.value
 
 class TileRecordGenerator(BaseGenerator):
     def __init__(self):
@@ -149,6 +146,17 @@ class TileRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
+        self.metricfile = MetricFile.TILE_METRICS.value
+
+class ExtendedTileRecordGenerator(BaseGenerator):
+    def __init__(self):
+        self._binary_format = BinaryFormat.TILE
+        self.header_format = "!BB"
+        self.header_values = (
+            self._binary_format.min_version,
+            self._binary_format.length,
+        )
+        self.metricfile = MetricFile.EXTENDED_TILE_METRICS.value
 
 class CorrectedIntensityRecordGenerator(BaseGenerator):
     def __init__(self):
@@ -158,6 +166,7 @@ class CorrectedIntensityRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
+        self.metricfile = MetricFile.CORRECTED_INTENSITY_METRICS.value
 
 class ExtractionRecordGenerator(BaseGenerator):
     def __init__(self):
@@ -167,6 +176,14 @@ class ExtractionRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
+        self.metricfile = MetricFile.EXTRACTION_METRICS.value
+
+
+    def generate_row(self, rand: Random) -> list[Any]:
+        # special handling for this one as the date format is a bit whacky
+        row = self._generate_numeric_sequence(self._binary_format.format, rand)
+        row[-1] = 2**48 + rand.randint(0, 2**32)
+        return row
 
 class ImageRecordGenerator(BaseGenerator):
     def __init__(self):
@@ -176,6 +193,7 @@ class ImageRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
+        self.metricfile = MetricFile.IMAGE_METRICS.value
 
 
 class PhasingRecordGenerator(BaseGenerator):
@@ -186,6 +204,7 @@ class PhasingRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
+        self.metricfile = MetricFile.PHASING_METRICS.value
 
 
 class CollapsedQRecordGenerator(BaseGenerator):
@@ -196,3 +215,4 @@ class CollapsedQRecordGenerator(BaseGenerator):
             self._binary_format.min_version,
             self._binary_format.length,
         )
+        self.metricfile = MetricFile.COLLAPSED_Q_METRICS.value

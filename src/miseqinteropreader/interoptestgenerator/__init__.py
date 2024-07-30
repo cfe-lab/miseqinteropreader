@@ -3,6 +3,7 @@ from .gen_data import (
     CollapsedQRecordGenerator,
     CorrectedIntensityRecordGenerator,
     ErrorRecordGenerator,
+    ExtendedTileRecordGenerator,
     ExtractionRecordGenerator,
     ImageRecordGenerator,
     IndexRecordGenerator,

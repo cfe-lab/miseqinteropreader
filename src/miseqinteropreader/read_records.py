@@ -138,8 +138,8 @@ def read_images(data_file: BufferedReader) -> Iterator[ImageRecord]:
     - minimum_contrast [uint16]
     - maximum_contrast [uint16]
     """
-    for data, _ in read_records(data_file, min_version=BinaryFormat.TILE.min_version):
-        fields = unpack(BinaryFormat.IMAGE.format, data[: BinaryFormat.TILE.length])
+    for data, _ in read_records(data_file, min_version=BinaryFormat.IMAGE.min_version):
+        fields = unpack(BinaryFormat.IMAGE.format, data[: BinaryFormat.IMAGE.length])
         yield ImageRecord(
             lane=fields[0],
             tile=fields[1],
@@ -164,8 +164,8 @@ def read_phasing(data_file: BufferedReader) -> Iterator[PhasingRecord]:
     - phasing_weight [float32]
     - prephasing weight [float32]
     """
-    for data, _ in read_records(data_file, min_version=BinaryFormat.TILE.min_version):
-        fields = unpack(BinaryFormat.PHASING.format, data[: BinaryFormat.TILE.length])
+    for data, _ in read_records(data_file, min_version=BinaryFormat.PHASING.min_version):
+        fields = unpack(BinaryFormat.PHASING.format, data[: BinaryFormat.PHASING.length])
         yield PhasingRecord(
             lane=fields[0],
             tile=fields[1],
