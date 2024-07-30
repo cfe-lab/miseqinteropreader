@@ -71,7 +71,7 @@ class BaseGenerator:
 class IndexRecordGenerator(BaseGenerator):
     def __init__(self):
         self.header_format = "!B"
-        self.header_values = (1,)
+        self.header_values = (1,) # type: ignore
 
     def generate_row(self, rand: Random) -> list[int | bytes]:
         sample_name = "".join(
