@@ -4,7 +4,7 @@ from random import Random
 from struct import pack
 
 import pytest
-from interoptestgenerator import (
+from miseqinteropreader.interoptestgenerator import (
     CollapsedQRecordGenerator,
     CorrectedIntensityRecordGenerator,
     ErrorRecordGenerator,
