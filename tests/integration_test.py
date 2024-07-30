@@ -4,9 +4,8 @@ from pathlib import Path
 from random import Random
 
 import pytest
-
 from miseqinteropreader import InterOpReader, MetricFile
-from miseqinteropreader.models import QualityRecord, TileMetricRecord
+from miseqinteropreader.models import ErrorRecord, QualityRecord, TileMetricRecord
 
 
 @pytest.fixture(scope="session")
@@ -46,6 +45,11 @@ class TestIntegrations:
                 MetricFile.ERROR_METRICS,
                 MetricFile.QUALITY_METRICS,
                 MetricFile.TILE_METRICS,
+                MetricFile.INDEX_METRICS,
+                # MetricFile.COLLAPSED_Q_METRICS,
+                # MetricFile.PHASING_METRICS,
+                # MetricFile.IMAGE_METRICS,
+                MetricFile.EXTRACTION_METRICS,
             }
         )
 
@@ -58,6 +62,11 @@ class TestIntegrations:
             MetricFile.QUALITY_METRICS,
             MetricFile.TILE_METRICS,
             MetricFile.SUMMARY_RUN,
+            MetricFile.INDEX_METRICS,
+            # MetricFile.COLLAPSED_Q_METRICS,
+            # MetricFile.PHASING_METRICS,
+            # MetricFile.IMAGE_METRICS,
+            MetricFile.EXTRACTION_METRICS,
         ]:
             if metric == MetricFile.SUMMARY_RUN:
                 with pytest.raises(ReferenceError):
@@ -102,20 +111,36 @@ class TestIntegrations:
         assert ior.qc_uploaded
         assert ior.needsprocessing
 
-        records: list[TileMetricRecord]
-        records = ior.read_file(MetricFile.TILE_METRICS)  # type: ignore
-        for record in records:
-            assert isinstance(record, TileMetricRecord)
+        tile_records: list[TileMetricRecord]
+        tile_records = ior.read_file(MetricFile.TILE_METRICS)  # type: ignore
+        for tile_record in tile_records:
+            assert isinstance(tile_record, TileMetricRecord)
 
-        summary = ior.summarize_tile_records(records)
+        tile_summary = ior.summarize_tile_records(tile_records)
+        assert tile_summary.density_count > 0
+        assert tile_summary.density_sum > 0
+        assert tile_summary.total_clusters > 0
+        assert tile_summary.passing_clusters > 0
+        assert 0 < tile_summary.pass_rate <= 1
+        assert tile_summary.pass_rate == (
+            tile_summary.passing_clusters / tile_summary.total_clusters
+        )
+        assert tile_summary.cluster_density == (
+            tile_summary.density_sum / tile_summary.density_count
+        )
 
-        assert summary.density_count > 0
-        assert summary.density_sum > 0
-        assert summary.total_clusters > 0
-        assert summary.passing_clusters > 0
-        assert 0 < summary.pass_rate <= 1
-        assert summary.pass_rate == (summary.passing_clusters / summary.total_clusters)
-        assert summary.cluster_density == (summary.density_sum / summary.density_count)
+        quality_records: list[QualityRecord]
+        quality_records = ior.read_file(MetricFile.QUALITY_METRICS)  # type: ignore
+        for quality_record in quality_records:
+            assert isinstance(quality_record, QualityRecord)
+        quality_summary = ior.summarize_quality_records(quality_records)
+
+        assert quality_summary.total_count >= 0
+        assert quality_summary.total_reverse >= 0
+        assert quality_summary.good_count >= 0
+        assert quality_summary.good_reverse >= 0
+        assert quality_summary.q30_forward >= 0
+        assert quality_summary.q30_reverse >= 0
 
     @pytest.mark.parametrize(
         "metricfile",

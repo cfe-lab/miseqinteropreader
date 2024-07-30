@@ -1,10 +1,28 @@
+import string
 from pathlib import Path
 from random import Random
 from struct import pack
 
 import pytest
+from interoptestgenerator import (
+    CollapsedQRecordGenerator,
+    CorrectedIntensityRecordGenerator,
+    ErrorRecordGenerator,
+    ExtractionRecordGenerator,
+    ImageRecordGenerator,
+    IndexRecordGenerator,
+    PhasingRecordGenerator,
+    QualityRecordGenerator,
+    TileRecordGenerator,
+)
 from miseqinteropreader.read_records import BinaryFormat
 
+num_rows = [
+    pytest.param(1, id="1 row"),
+    pytest.param(5, id="5 rows"),
+    pytest.param(10, id="10 rows"),
+    pytest.param(100, id="100 rows"),
+]
 
 @pytest.fixture
 def run_dir(tmp_path: Path) -> Path:
@@ -21,65 +39,95 @@ def run_dir(tmp_path: Path) -> Path:
 
     return run_dir
 
+@pytest.fixture
+def rng() -> Random:
+    return Random()
 
-def generate_numeric_sequence(binary_format: str) -> list[int | float]:
-    rng = Random()
-    outlist: list[int | float] = []
-    for char in binary_format:
-        if char == "<":
-            continue
-        elif char == "H":
-            outlist.append(rng.randint(0, 2**16 - 1))
-        elif char == "f":
-            outlist.append(rng.random())
-        elif char == "L":
-            outlist.append(rng.randint(0, 2**32 - 1))
-        elif char == "I":
-            outlist.append(rng.randint(0, 2**32 - 1))
-        elif char == "Q":
-            outlist.append(rng.randint(0, 2**64 - 1))
-    return outlist
+# tile metrics/extended tile metrics
 
+@pytest.fixture(scope="session")
+def tile_metric_generator() -> TileRecordGenerator:
+    return TileRecordGenerator()
+
+@pytest.fixture(params=num_rows)
+def tile_metric_row(request: pytest.FixtureRequest, tile_metric_generator: TileRecordGenerator, rng: Random) -> list[list[int | float]]:
+    return [tile_metric_generator.generate_row(rng) for _ in range(request.param)]
 
 @pytest.fixture
-def tile_metric_data() -> list[int | float]:
-    return generate_numeric_sequence(BinaryFormat.TILE.format)
-
-
-@pytest.fixture
-def tile_metric_row(tile_metric_data: list[int | float]) -> bytes:
-    return pack(BinaryFormat.TILE.format, *tile_metric_data)
-
+def tile_metric_bytes(tile_metric_generator: TileRecordGenerator, tile_metric_row: list[list[int | float]]) -> list[bytes]:
+    return list(tile_metric_generator.generate_binary(tile_metric_row))
 
 @pytest.fixture
-def error_metric_data() -> list[int | float]:
-    return generate_numeric_sequence(BinaryFormat.ERROR.format)
-
-
-@pytest.fixture
-def error_metric_row(error_metric_data: list[int | float]) -> bytes:
-    return pack(BinaryFormat.ERROR.format, *error_metric_data)
-
-
-@pytest.fixture
-def quality_metric_data() -> list[int | float]:
-    return generate_numeric_sequence(BinaryFormat.QUALITY.format)
-
-
-@pytest.fixture
-def quality_metric_row(quality_metric_data: list[int | float]) -> bytes:
-    return pack(
-        BinaryFormat.QUALITY.format,
-        *quality_metric_data,
-    )
-
-
-@pytest.fixture
-def tile_metric_file(run_dir: Path, tile_metric_row: bytes) -> Path:
+def tile_metric_file(tile_metric_generator: TileRecordGenerator, run_dir: Path, tile_metric_bytes: list[bytes]) -> Path:
     file = run_dir / "InterOp" / "TileMetricsOut.bin"
-    with open(file, "wb") as f:
-        f.write(pack("!BB", BinaryFormat.TILE.min_version, BinaryFormat.TILE.length))
-        f.write(tile_metric_row)
-    # print(file.read_bytes())
+    if not file.parent.exists():
+        file.parent.mkdir(parents=True)
+    tile_metric_generator.write_file(file, None, tile_metric_bytes)
+    return file
 
+# error metrics
+
+@pytest.fixture(scope="session")
+def error_metric_generator() -> ErrorRecordGenerator:
+    return ErrorRecordGenerator()
+
+@pytest.fixture(params=num_rows)
+def error_metric_row(request: pytest.FixtureRequest, error_metric_generator: ErrorRecordGenerator, rng: Random) -> list[list[int | float]]:
+    return [error_metric_generator.generate_row(rng) for _ in range(request.param)]
+
+@pytest.fixture
+def error_metric_bytes(error_metric_generator: ErrorRecordGenerator, error_metric_row: list[list[int | float]]) -> list[bytes]:
+    return list(error_metric_generator.generate_binary(error_metric_row))
+
+@pytest.fixture
+def error_metric_file(error_metric_generator: ErrorRecordGenerator, run_dir: Path, error_metric_bytes: list[bytes]) -> Path:
+    file = run_dir / "InterOp" / "ErrorMetricsOut.bin"
+    if not file.parent.exists():
+        file.parent.mkdir(parents=True)
+    error_metric_generator.write_file(file, None, error_metric_bytes)
+    return file
+
+# quality metrics
+
+@pytest.fixture(scope="session")
+def quality_metric_generator() -> QualityRecordGenerator:
+    return QualityRecordGenerator()
+
+@pytest.fixture(params=num_rows)
+def quality_metric_row(request: pytest.FixtureRequest, quality_metric_generator: QualityRecordGenerator, rng: Random) -> list[list[int | float]]:
+    return [quality_metric_generator.generate_row(rng) for _ in range(request.param)]
+
+@pytest.fixture
+def quality_metric_bytes(quality_metric_generator: QualityRecordGenerator, quality_metric_row: list[list[int | float]]) -> list[bytes]:
+    return list(quality_metric_generator.generate_binary(quality_metric_row))
+
+@pytest.fixture
+def quality_metric_file(quality_metric_generator: QualityRecordGenerator, run_dir: Path, quality_metric_bytes: list[bytes]) -> Path:
+    file = run_dir / "InterOp" / "QualityMetricsOut.bin"
+    if not file.parent.exists():
+        file.parent.mkdir(parents=True)
+    quality_metric_generator.write_file(file, None, quality_metric_bytes)
+    return file
+
+
+# index metrics
+
+@pytest.fixture(scope="session")
+def index_metric_generator() -> IndexRecordGenerator:
+    return IndexRecordGenerator()
+
+@pytest.fixture(params=num_rows)
+def index_metric_row(request: pytest.FixtureRequest, index_metric_generator: IndexRecordGenerator, rng: Random) -> list[list[int | bytes]]:
+    return [index_metric_generator.generate_row(rng) for _ in range(request.param)]
+
+@pytest.fixture
+def index_metric_bytes(index_metric_generator: IndexRecordGenerator, index_metric_row: list[list[int | bytes]]) -> list[bytes]:
+    return list(index_metric_generator.generate_binary(index_metric_row))
+
+@pytest.fixture
+def index_metric_file(index_metric_generator: IndexRecordGenerator, run_dir: Path, index_metric_bytes: list[bytes]) -> Path:
+    file = run_dir / "InterOp" / "QualityMetricsOut.bin"
+    if not file.parent.exists():
+        file.parent.mkdir(parents=True)
+    index_metric_generator.write_file(file, None, index_metric_bytes)
     return file

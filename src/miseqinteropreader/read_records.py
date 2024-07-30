@@ -25,6 +25,8 @@ class BinaryFormat(Enum):
     EXTRACTION = ("<HHHffffHHHHQ", 38, 2)
     IMAGE = ("<HHHHHH", 12, 1)
     PHASING = ("<HHHff", 14, 1)
+    SUMMARY = ("<Hffff", None, None)
+    COLLAPSEDQ = ("<HHHIIII", 22, 2)
 
     def __init__(self, format: str, length: int, min_version: int):
         self.format = format
@@ -337,11 +339,14 @@ def read_extractions(
 
 
 def read_index(data_file: BufferedReader) -> Iterator[IndexRecord]:
-    """Read records from an Illumina Interop file.
-    :param file data_file: an open file-like object. Needs to have a one-byte
-    header with the file version and the length of each record, followed by the
-    records.
-    :param int min_version: the minimum accepted file version.
+    """Read from the interop index file, this file is a bit more complicated
+    than previous files in that it is a variable length packing scheme. We have
+    to iterate through each individual row to make sure we get the right size.
+
+    The method for reading this file is quite fragile, so please remember to
+    wrap this in a try/except!
+
+    :param BufferedReader data_file: the open file handler to read.
     :return: an iterator over the records in the file. Each record will be a raw
     byte string of the length from the header.
     """
@@ -356,40 +361,44 @@ def read_index(data_file: BufferedReader) -> Iterator[IndexRecord]:
         )
     while True:
         metric = data_file.read(6)
+        if len(metric) == 0:
+            break
+        elif len(metric) < 6:
+            raise RuntimeError("Partial record for index file, breaking.")
         lane, tile, read = unpack("<HHH", metric)
 
         data: dict[str, dict[str, Any]] = {}
 
         # unfortunately the cluster_count property is embedded in the middle of
         # these other difficult to read bytes.
+        cluster_count = -1
         for name in ["index", None, "sample", "project"]:
             if name is None:
                 if version == 1:
                     index_cluster_count_bytes = data_file.read(4)
-                    data["cluster_count"] = unpack("<I", index_cluster_count_bytes)[0]
+                    cluster_count = unpack("I", index_cluster_count_bytes)[0]
                 else:
                     index_cluster_count_bytes = data_file.read(8)
-                    data["cluster_count"] = unpack("<Q", index_cluster_count_bytes)[0]
+                    print(index_cluster_count_bytes)
+                    cluster_count = unpack("Q", index_cluster_count_bytes)[0]
             else:
                 data[name] = {}
                 data[name]["length_bytes"] = data_file.read(2)
-                data[name]["length"] = unpack("<H", data[name]["length_bytes"])[0]
+                data[name]["length"] = unpack("H", data[name]["length_bytes"])[0]
                 data[name]["name_bytes"] = data_file.read(data[name]["length"])
                 data[name]["name"] = unpack(
-                    f"<{data[name]['length']}s", data[name]["name_bytes"]
+                    f"{data[name]['length']}s", data[name]["name_bytes"]
                 )[0]
 
-        if len(metric) == 0:
-            break
         yield IndexRecord(
             lane_number=lane,
             tile_number=tile,
             read_number=read,
-            index_name=data["index"]["name"],
+            index_name_b=data["index"]["name"],
             index_name_length=data["index"]["length"],
-            index_cluster_count=data["cluster_count"],
-            sample_name=data["sample"]["name"],
+            index_cluster_count=cluster_count,
+            sample_name_b=data["sample"]["name"],
             sample_name_length=data["sample"]["length"],
-            project_name=data["project"]["name"],
+            project_name_b=data["project"]["name"],
             project_name_length=data["project"]["length"],
         )

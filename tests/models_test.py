@@ -2,9 +2,8 @@ from contextlib import nullcontext
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
-
 from miseqinteropreader.models import QualityRecord
+from pydantic import ValidationError
 
 
 @pytest.mark.parametrize(

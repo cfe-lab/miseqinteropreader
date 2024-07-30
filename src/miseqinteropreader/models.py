@@ -161,9 +161,24 @@ class IndexRecord(BaseRecord):
     sample_name_length: uint16
     project_name_length: uint16
 
-    index_name: str
-    sample_name: str
-    project_name: str
+    index_name_b: bytes
+    sample_name_b: bytes
+    project_name_b: bytes
+
+    @computed_field  # type: ignore
+    @cached_property
+    def index_name(self) -> str:
+        return self.index_name_b.decode()
+
+    @computed_field  # type: ignore
+    @cached_property
+    def sample_name(self) -> str:
+        return self.sample_name_b.decode()
+
+    @computed_field  # type: ignore
+    @cached_property
+    def project_name(self) -> str:
+        return self.project_name_b.decode()
 
 
 class SummaryRecord(BaseRecord):

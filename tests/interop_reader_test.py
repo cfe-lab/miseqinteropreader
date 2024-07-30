@@ -59,7 +59,7 @@ def test_interop_dir_missing_file(tmp_path: Path):
     assert not files_present
 
 
-def test_interopreader(run_dir: Path, tile_metric_file: Path):
+def test_interopreader(run_dir: Path, tile_metric_row: list[list[int | float]], tile_metric_file: Path):
     (run_dir / "SampleSheet.csv").touch()
 
     ior = InterOpReader(run_dir)
@@ -69,7 +69,7 @@ def test_interopreader(run_dir: Path, tile_metric_file: Path):
 
     records = ior.read_file(MetricFile.TILE_METRICS)
 
-    assert len(records) == 1
+    assert len(records) == len(tile_metric_row)
 
     for record in records:
         assert isinstance(record, TileMetricRecord)

@@ -1,11 +1,13 @@
 {
     "[python]": {
         "editor.codeActionsOnSave": {
-            "source.organizeImports.ruff": "explicit"
+            "source.organizeImports": "never",
+            "source.organizeImports.ruff": "always"
         },
         "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": false
     },
+    "editor.formatOnSave": false,
     "coverage-gutters.showRulerCoverage": true,
     "diffEditor.ignoreTrimWhitespace": true,
     "editor.trimAutoWhitespace": true,
@@ -26,5 +28,6 @@
     "python.languageServer": "Default",
     "ruff.enable": true,
     "ruff.importStrategy": "fromEnvironment",
-    "ruff.configurationPreference": "filesystemFirst"
+    "ruff.configurationPreference": "filesystemFirst",
+    "isort.check": false
 }
