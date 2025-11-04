@@ -16,10 +16,18 @@ For an indepth breakdown of binary formats used, see the [Illumina binary format
 pip install miseqinteropreader
 ```
 
-Or with poetry:
+Or with uv:
 
 ```bash
-poetry add miseqinteropreader
+uv add miseqinteropreader
+```
+
+For development, clone the repository and install with dev dependencies:
+
+```bash
+git clone <repository-url>
+cd miseqinteropreader
+uv sync --all-extras
 ```
 
 ## Command-Line Interface
@@ -195,12 +203,22 @@ print(f"Pass Rate: {tile_summary.pass_rate:.2%}")
 
 Run tests:
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 Run with coverage:
 ```bash
-poetry run pytest --cov=src/miseqinteropreader
+uv run pytest --cov=src/miseqinteropreader
+```
+
+Run type checking:
+```bash
+uv run mypy .
+```
+
+Run linting:
+```bash
+uv run ruff check .
 ```
 
 ## License

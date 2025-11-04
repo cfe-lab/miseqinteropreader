@@ -1,31 +1,67 @@
-[tool.poetry]
+[project]
 name = "miseqinteropreader"
-version = "0.1.0"
-description = ""
-authors = ["drickett <drickett@bccfe.ca>"]
+dynamic = ["version"]
+description = "Python parser for Illumina MiSeq InterOp binary files"
+authors = [
+    { name = "drickett", email = "drickett@bccfe.ca" },
+]
+requires-python = ">=3.12"
 readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
 
-[tool.poetry.scripts]
+dependencies = [
+    "pydantic>=2.8.2,<3.0.0",
+    "pandas>=2.2.2,<3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.2",
+    "pytest-cov>=5.0.0",
+    "pytest-html>=4.1.1",
+    "mypy>=1.10.1",
+    "mypy-extensions>=1.0.0",
+    "ruff>=0.5.1",
+    "pandas-stubs>=2.2.2.240603",
+    "uv>=0.5.0",
+]
+
+[project.scripts]
 miseq-interop = "miseqinteropreader.cli:main"
 
-[tool.poetry.dependencies]
-python = "^3.12"
-pydantic = "^2.8.2"
-pandas = "^2.2.2"
+[tool.hatch.version]
+source = "vcs"
 
+[tool.hatch.version.raw-options]
+# Never fail: use this if there is no Git repository / tags
+fallback_version = "0.dev0"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
-pytest-cov = "^5.0.0"
-pytest-html = "^4.1.1"
-mypy = "^1.10.1"
-mypy-extensions = "^1.0.0"
-ruff = "^0.5.1"
-pandas-stubs = "^2.2.2.240603"
+[tool.hatch.build]
+include = [
+    "src/miseqinteropreader/",
+]
+exclude = [
+    "tests/",
+]
+skip-excluded-dirs = true
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 # [tool.isort]
 # profile = "black"
