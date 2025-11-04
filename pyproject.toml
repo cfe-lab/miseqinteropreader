@@ -4,6 +4,7 @@ dynamic = ["version"]
 description = "Python parser for Illumina MiSeq InterOp binary files"
 authors = [
     { name = "drickett", email = "drickett@bccfe.ca" },
+    { name = "Vitaliy Mysak", email = "vmysak@bccfe.ca" },
 ]
 requires-python = ">=3.12"
 readme = "README.md"
