@@ -2,6 +2,7 @@ from pathlib import Path
 from random import Random
 
 import pytest
+
 from miseqinteropreader import InterOpReader, MetricFile
 from miseqinteropreader.models import TileMetricRecord
 

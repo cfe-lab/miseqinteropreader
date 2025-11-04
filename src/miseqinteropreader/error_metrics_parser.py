@@ -60,7 +60,7 @@ def write_phix_csv(out_file, records, read_lengths: tuple[int, int, int] | None 
             summary_index = (sign + 1) // 2
             error_sums[summary_index] += record[2]
             error_counts[summary_index] += 1
-        if read_lengths:
+        if read_lengths and record is not None:
             read_length = read_lengths[0] if sign == 1 else -read_lengths[-1]
             while previous_cycle * sign < read_length * sign:
                 previous_cycle += sign
