@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from functools import cached_property
 from math import isclose
 from typing import Annotated, Any
 
@@ -125,7 +124,7 @@ class ExtractionRecord(BaseCycleMetricRecord):
     datestamp: uint64
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def datetime(self) -> datetime:
         """
         this is a 64 bit integer,
@@ -166,17 +165,17 @@ class IndexRecord(BaseRecord):
     project_name_b: bytes
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def index_name(self) -> str:
         return self.index_name_b.decode()
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def sample_name(self) -> str:
         return self.sample_name_b.decode()
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def project_name(self) -> str:
         return self.project_name_b.decode()
 
@@ -293,14 +292,14 @@ class TileMetricSummary(BaseModel):
     passing_clusters: float
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def pass_rate(self) -> float:
         if self.total_clusters == 0:
             return 0.0
         return self.passing_clusters / self.total_clusters
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def cluster_density(self) -> float:
         if self.density_count == 0:
             return 0.0
@@ -321,14 +320,14 @@ class QualityMetricsSummary(BaseModel):
     good_reverse: int
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def q30_forward(self) -> float:
         if self.total_count == 0:
             return 0.0
         return self.good_count / float(self.total_count)
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def q30_reverse(self) -> float:
         if self.total_reverse == 0:
             return 0.0
@@ -350,14 +349,14 @@ class ErrorMetricsSummary(BaseModel):
     error_count_reverse: int = Field(ge=0)
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def error_rate_forward(self) -> float:
         if self.error_count_forward == 0:
             return 0.0
         return self.error_sum_forward / float(self.error_count_forward)
 
     @computed_field  # type: ignore
-    @cached_property
+    @property
     def error_rate_reverse(self) -> float:
         if self.error_count_reverse == 0:
             return 0.0
