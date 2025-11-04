@@ -1,0 +1,36 @@
+name: Build and Test
+on: push
+jobs:
+  main:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install package manager
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python dependencies
+        run: |
+          uv sync --extra dev
+
+      - name: Check if lock file changed
+        run: |
+          git diff --quiet uv.lock
+
+      - name: Run type checker
+        run: |
+          uv run mypy
+
+      - name: Run linter
+        run: |
+          uv run ruff check
+
+      - name: Test with pytest
+        run: uv run coverage run --source=src/miseqinteropreader -m pytest
+
+      - name: Report code coverage
+        if: "!github.event.pull_request.draft"
+        run: |
+          uv run codecov
