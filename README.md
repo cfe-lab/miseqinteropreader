@@ -129,34 +129,6 @@ Available metrics:
 - `COLLAPSED_Q_METRICS` - Collapsed quality bins (Q20/Q30)
 - `INDEX_METRICS` - Index read information
 
-#### `list` - List Available Runs
-
-List all valid MiSeq runs in a directory:
-
-```bash
-# List all runs
-miseq-interop list /media/raw_data/MiSeq/runs
-
-# Filter by status
-miseq-interop list /media/raw_data/MiSeq/runs --needs-processing
-miseq-interop list /media/raw_data/MiSeq/runs --qc-uploaded
-
-# Filter by name pattern (regex)
-miseq-interop list /media/raw_data/MiSeq/runs --pattern "2024.*"
-
-# Show full paths
-miseq-interop list /media/raw_data/MiSeq/runs --full-path
-
-# Verbose output with status information
-miseq-interop list /media/raw_data/MiSeq/runs -v
-```
-
-### Common Options
-
-- `-v, --verbose` - Enable verbose output with additional details
-- `-o, --output` - Specify output file or directory
-- `--format` - Choose output format (json, csv, table, or parquet)
-
 ### Example Workflows
 
 **QC Pipeline Integration:**
