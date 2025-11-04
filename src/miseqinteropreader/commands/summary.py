@@ -147,8 +147,8 @@ def execute(args: argparse.Namespace) -> int:
     # Generate tile summary
     if generate_tiles:
         try:
-            records: list[TileMetricRecord] = reader.read_file(MetricFile.TILE_METRICS)  # type: ignore
-            tile_summary = reader.summarize_tile_records(records)
+            tile_records: list[TileMetricRecord] = reader.read_file(MetricFile.TILE_METRICS)  # type: ignore
+            tile_summary = reader.summarize_tile_records(tile_records)
             summary_data["tiles"] = {
                 "density_count": tile_summary.density_count,
                 "density_sum": round(tile_summary.density_sum, 2),
@@ -158,7 +158,7 @@ def execute(args: argparse.Namespace) -> int:
                 "pass_rate": round(tile_summary.pass_rate, 4),
             }
             if args.verbose:
-                print(f"✓ Tile summary generated ({len(records)} records)")
+                print(f"✓ Tile summary generated ({len(tile_records)} records)")
         except FileNotFoundError:
             if args.verbose:
                 print("✗ Tile metrics file not found")
@@ -174,7 +174,7 @@ def execute(args: argparse.Namespace) -> int:
     # Generate error summary
     if generate_errors:
         try:
-            records: list[ErrorRecord] = reader.read_file(MetricFile.ERROR_METRICS)  # type: ignore
+            error_records: list[ErrorRecord] = reader.read_file(MetricFile.ERROR_METRICS)  # type: ignore
 
             # Calculate error summary manually
             error_sum_forward = 0.0
@@ -186,7 +186,7 @@ def execute(args: argparse.Namespace) -> int:
                 last_forward_cycle = read_lengths[0]
                 first_reverse_cycle = sum(read_lengths[:-1]) + 1
 
-                for record in records:
+                for record in error_records:
                     if record.cycle <= last_forward_cycle:
                         error_sum_forward += record.error_rate
                         error_count_forward += 1
@@ -195,7 +195,7 @@ def execute(args: argparse.Namespace) -> int:
                         error_count_reverse += 1
             else:
                 # Without read lengths, treat all as forward
-                for record in records:
+                for record in error_records:
                     error_sum_forward += record.error_rate
                     error_count_forward += 1
 
@@ -215,7 +215,7 @@ def execute(args: argparse.Namespace) -> int:
                 "error_rate_reverse": round(error_rate_reverse, 4),
             }
             if args.verbose:
-                print(f"✓ Error summary generated ({len(records)} records)")
+                print(f"✓ Error summary generated ({len(error_records)} records)")
         except FileNotFoundError:
             if args.verbose:
                 print("✗ Error metrics file not found")
