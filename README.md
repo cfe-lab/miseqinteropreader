@@ -1,7 +1,7 @@
 # Miseq Binary Parser
 
 [![pipeline status](https://git-int.cfenet.ubc.ca/cfe/miseqinteropreader/badges/main/pipeline.svg)](https://git-int.cfenet.ubc.ca/cfe/miseqinteropreader/-/commits/main)
-[![coverage report](https://git-int.cfenet.ubc.ca/cfe/miseqinteropreader/badges/main/coverage.svg)](https://git-int.cfenet.ubc.ca/cfe/miseqinteropreader/-/commits/main)
+[![coverage report]([![codecov](https://codecov.io/gh/cfe-lab/miseqinteropreader/graph/badge.svg?token=IFVA5WNVXF)](https://codecov.io/gh/cfe-lab/miseqinteropreader))
 [![Latest Release](https://git-int.cfenet.ubc.ca/cfe/miseqinteropreader/-/badges/release.svg)](https://git-int.cfenet.ubc.ca/cfe/miseqinteropreader/-/releases)
 
 This module is built to replace the [Illuminate](https://github.com/nthmost/illuminate) package, which has not seen an update in over 7 years.
