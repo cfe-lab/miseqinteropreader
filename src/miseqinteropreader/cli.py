@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .commands import extract, info, list_runs, summary, validate
+from .commands import extract, info, summary, validate
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -56,13 +56,6 @@ def create_parser() -> argparse.ArgumentParser:
     )
     extract.add_arguments(extract_parser)
 
-    # List command
-    list_parser = subparsers.add_parser(
-        "list",
-        help="List available runs in a directory",
-    )
-    list_runs.add_arguments(list_parser)
-
     return parser
 
 
@@ -81,8 +74,6 @@ def main() -> int:
             return summary.execute(args)
         elif args.command == "extract":
             return extract.execute(args)
-        elif args.command == "list":
-            return list_runs.execute(args)
         else:
             parser.print_help()
             return 1
