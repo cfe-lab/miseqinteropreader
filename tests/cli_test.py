@@ -76,28 +76,6 @@ class TestCLIParser:
         )
         assert args.format == "csv"
 
-    def test_list_command(self):
-        """Test list command parsing."""
-        parser = create_parser()
-        args = parser.parse_args(["list", "/path/to/runs"])
-        assert args.command == "list"
-        assert args.runs_dir == Path("/path/to/runs")
-
-    def test_list_with_filters(self):
-        """Test list command with filters."""
-        parser = create_parser()
-        args = parser.parse_args(
-            ["list", "/path/to/runs", "--needs-processing", "--verbose"]
-        )
-        assert args.needs_processing is True
-        assert args.verbose is True
-
-    def test_list_with_pattern(self):
-        """Test list command with pattern."""
-        parser = create_parser()
-        args = parser.parse_args(["list", "/path/to/runs", "--pattern", "2024.*"])
-        assert args.pattern == "2024.*"
-
     def test_no_command_raises_error(self):
         """Test that no command raises an error."""
         parser = create_parser()
@@ -168,17 +146,6 @@ class TestExtractCommandModule:
 
         assert hasattr(extract, "add_arguments")
         assert hasattr(extract, "execute")
-
-
-class TestListCommandModule:
-    """Test the list command module."""
-
-    def test_import_list_module(self):
-        """Test that list module can be imported."""
-        from miseqinteropreader.commands import list_runs
-
-        assert hasattr(list_runs, "add_arguments")
-        assert hasattr(list_runs, "execute")
 
 
 class TestFormatters:
