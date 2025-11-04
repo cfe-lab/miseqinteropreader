@@ -1,6 +1,6 @@
 # Miseq Binary Parser
 
-[![coverage report]([![codecov](https://codecov.io/gh/cfe-lab/miseqinteropreader/graph/badge.svg?token=IFVA5WNVXF)](https://codecov.io/gh/cfe-lab/miseqinteropreader))
+![coverage report](https://codecov.io/gh/cfe-lab/miseqinteropreader/graph/badge.svg?token=IFVA5WNVXF)
 
 This module is built to replace the [Illuminate](https://github.com/nthmost/illuminate) package, which has not seen an update in over 7 years.
 
