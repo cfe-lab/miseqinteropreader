@@ -30,21 +30,21 @@ stages:
     pull_policy: if-not-present
   stage: test
   before_script:
-    - pip install poetry
-    - poetry install --no-root --with=dev
+    - pip install uv
+    - uv sync --all-extras
   tags:
     - nodb
 
 code-check:
   extends: .python
   script:
-    - poetry run ruff check --exclude tests/ .
-    - poetry run mypy --check --exclude tests/ --exclude examples/ .
+    - uv run ruff check --exclude tests/ .
+    - uv run mypy --check --exclude tests/ --exclude examples/ .
 
 unit-tests:
   extends: .python
   script:
-    - poetry run pytest
+    - uv run pytest
       -vra
       --html='${JUNIT_TEST_REPORT}'
       --self-contained-html
@@ -64,10 +64,7 @@ build-and-publish:
   stage: deploy
   extends: .python
   script:
-    - poetry build
-    - poetry version "$CI_COMMIT_TAG"
-    - poetry config repositories.gitlab "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
-    - poetry config http-basic.gitlab gitlab-ci-token "$CI_JOB_TOKEN"
-    - poetry publish --build --repository gitlab
+    - uv build
+    - uv publish --username gitlab-ci-token --password "$CI_JOB_TOKEN" --publish-url "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
   rules:
     - if: $CI_COMMIT_TAG
