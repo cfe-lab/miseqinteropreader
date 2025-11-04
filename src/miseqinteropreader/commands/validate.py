@@ -1,9 +1,15 @@
 """Validate command - check run directory structure and available metrics."""
 
 import argparse
-import sys
 from pathlib import Path
 
+from ..cli_utils import (
+    Verbosity,
+    add_verbosity_arguments,
+    configure_verbosity,
+    error,
+    info,
+)
 from ..interop_reader import InterOpReader, MetricFile
 
 
@@ -14,47 +20,42 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         type=Path,
         help="Path to the MiSeq run directory",
     )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Enable verbose output",
-    )
+    add_verbosity_arguments(parser)
 
 
 def execute(args: argparse.Namespace) -> int:
     """Execute the validate command."""
+    configure_verbosity(args)
     run_dir = args.run_dir
-    verbose = args.verbose
 
     # Track if any errors occurred
     has_errors = False
 
     # Check if directory exists
     if not run_dir.exists():
-        print(f"✗ Run directory does not exist: {run_dir}", file=sys.stderr)
+        error(f"✗ Run directory does not exist: {run_dir}")
         return 1
 
     if not run_dir.is_dir():
-        print(f"✗ Path is not a directory: {run_dir}", file=sys.stderr)
+        error(f"✗ Path is not a directory: {run_dir}")
         return 1
 
-    print(f"✓ Run directory exists: {run_dir.name}")
+    info(f"✓ Run directory exists: {run_dir.name}")
 
     # Check for InterOp directory
     interop_dir = run_dir / "InterOp"
     if interop_dir.exists() and interop_dir.is_dir():
-        print(f"✓ InterOp directory found")
+        info(f"✓ InterOp directory found")
     else:
-        print(f"✗ InterOp directory not found", file=sys.stderr)
+        error(f"✗ InterOp directory not found")
         has_errors = True
 
     # Check for SampleSheet.csv
     samplesheet_path = run_dir / "SampleSheet.csv"
     if samplesheet_path.exists():
-        print(f"✓ SampleSheet.csv found")
+        info(f"✓ SampleSheet.csv found")
     else:
-        print(f"✗ SampleSheet.csv not found", file=sys.stderr)
+        error(f"✗ SampleSheet.csv not found")
         has_errors = True
 
     # Check for marker files
@@ -62,14 +63,14 @@ def execute(args: argparse.Namespace) -> int:
     qc_uploaded_marker = run_dir / "qc_uploaded"
 
     if needsprocessing_marker.exists():
-        print(f"✓ Marker: needsprocessing")
+        info(f"✓ Marker: needsprocessing")
     else:
-        print(f"  Marker: needsprocessing (not present)")
+        info(f"  Marker: needsprocessing (not present)", Verbosity.VERBOSE)
 
     if qc_uploaded_marker.exists():
-        print(f"✓ Marker: qc_uploaded")
+        info(f"✓ Marker: qc_uploaded")
     else:
-        print(f"  Marker: qc_uploaded (not present)")
+        info(f"  Marker: qc_uploaded (not present)", Verbosity.VERBOSE)
 
     # If basic checks failed, stop here
     if has_errors:
@@ -79,15 +80,15 @@ def execute(args: argparse.Namespace) -> int:
     try:
         reader = InterOpReader(run_dir)
     except Exception as e:
-        print(f"\n✗ Failed to initialize InterOpReader: {e}", file=sys.stderr)
-        if verbose:
-            import traceback
+        error(f"\n✗ Failed to initialize InterOpReader: {e}")
+        info("", Verbosity.DEBUG)  # Print traceback at debug level
+        import traceback
 
-            traceback.print_exc()
+        info(traceback.format_exc(), Verbosity.DEBUG)
         return 1
 
     # Check available metric files
-    print("\nAvailable metrics:")
+    info("\nAvailable metrics:")
     available_count = 0
     total_count = 0
 
@@ -95,18 +96,17 @@ def execute(args: argparse.Namespace) -> int:
         total_count += 1
         try:
             metric_file = metric.value.get_file(reader.interop_dir)
-            print(f"✓ {metric.name}")
+            info(f"✓ {metric.name}")
             available_count += 1
-            if verbose:
-                print(f"  -> {metric_file.name}")
+            info(f"  -> {metric_file.name}", Verbosity.VERBOSE)
         except FileNotFoundError:
-            print(f"✗ {metric.name} (missing)")
+            info(f"✗ {metric.name} (missing)")
 
-    print(f"\nSummary: {available_count}/{total_count} metrics available")
+    info(f"\nSummary: {available_count}/{total_count} metrics available")
 
     if available_count == 0:
-        print("\n✗ No metrics found in InterOp directory", file=sys.stderr)
+        error("\n✗ No metrics found in InterOp directory")
         return 1
 
-    print(f"\n✓ Run directory is valid and ready for analysis")
+    info(f"\n✓ Run directory is valid and ready for analysis")
     return 0

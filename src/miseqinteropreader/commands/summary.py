@@ -4,6 +4,13 @@ import argparse
 from pathlib import Path
 from typing import Any
 
+from ..cli_utils import (
+    Verbosity,
+    add_verbosity_arguments,
+    configure_verbosity,
+    error,
+    info,
+)
 from ..formatters import csv_formatter, json_formatter, table_formatter
 from ..interop_reader import InterOpReader, MetricFile
 from ..models import ErrorRecord, QualityRecord, TileMetricRecord
@@ -53,12 +60,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         type=Path,
         help="Output file path (if not specified, prints to stdout)",
     )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        help="Enable verbose output",
-    )
+    add_verbosity_arguments(parser)
 
 
 def parse_read_lengths(read_lengths_str: str) -> tuple[int, int, int]:
@@ -84,6 +86,7 @@ def parse_read_lengths(read_lengths_str: str) -> tuple[int, int, int]:
 
 def execute(args: argparse.Namespace) -> int:
     """Execute the summary command."""
+    configure_verbosity(args)
     run_dir = args.run_dir
 
     # Parse read lengths if provided
@@ -92,14 +95,14 @@ def execute(args: argparse.Namespace) -> int:
         try:
             read_lengths = parse_read_lengths(args.read_lengths)
         except ValueError as e:
-            print(f"Error: {e}")
+            error(f"Error: {e}")
             return 1
 
     # Initialize reader
     try:
         reader = InterOpReader(run_dir)
     except Exception as e:
-        print(f"Error: Failed to read run directory: {e}")
+        error(f"Error: Failed to read run directory: {e}")
         return 1
 
     # Determine which summaries to generate
@@ -130,18 +133,15 @@ def execute(args: argparse.Namespace) -> int:
                 "q30_forward": round(quality_summary.q30_forward, 4),
                 "q30_reverse": round(quality_summary.q30_reverse, 4),
             }
-            if args.verbose:
-                print(f"✓ Quality summary generated ({len(records)} records)")
+            info(f"✓ Quality summary generated ({len(records)} records)", Verbosity.VERBOSE)
         except FileNotFoundError:
-            if args.verbose:
-                print("✗ Quality metrics file not found")
+            info("✗ Quality metrics file not found", Verbosity.VERBOSE)
             summary_data["quality"] = None
         except Exception as e:
-            print(f"Error generating quality summary: {e}")
-            if args.verbose:
-                import traceback
+            error(f"Error generating quality summary: {e}")
+            import traceback
 
-                traceback.print_exc()
+            info(traceback.format_exc(), Verbosity.DEBUG)
             summary_data["quality"] = None
 
     # Generate tile summary
@@ -157,18 +157,15 @@ def execute(args: argparse.Namespace) -> int:
                 "cluster_density": round(tile_summary.cluster_density, 2),
                 "pass_rate": round(tile_summary.pass_rate, 4),
             }
-            if args.verbose:
-                print(f"✓ Tile summary generated ({len(tile_records)} records)")
+            info(f"✓ Tile summary generated ({len(tile_records)} records)", Verbosity.VERBOSE)
         except FileNotFoundError:
-            if args.verbose:
-                print("✗ Tile metrics file not found")
+            info("✗ Tile metrics file not found", Verbosity.VERBOSE)
             summary_data["tiles"] = None
         except Exception as e:
-            print(f"Error generating tile summary: {e}")
-            if args.verbose:
-                import traceback
+            error(f"Error generating tile summary: {e}")
+            import traceback
 
-                traceback.print_exc()
+            info(traceback.format_exc(), Verbosity.DEBUG)
             summary_data["tiles"] = None
 
     # Generate error summary
@@ -214,18 +211,15 @@ def execute(args: argparse.Namespace) -> int:
                 "error_rate_forward": round(error_rate_forward, 4),
                 "error_rate_reverse": round(error_rate_reverse, 4),
             }
-            if args.verbose:
-                print(f"✓ Error summary generated ({len(error_records)} records)")
+            info(f"✓ Error summary generated ({len(error_records)} records)", Verbosity.VERBOSE)
         except FileNotFoundError:
-            if args.verbose:
-                print("✗ Error metrics file not found")
+            info("✗ Error metrics file not found", Verbosity.VERBOSE)
             summary_data["errors"] = None
         except Exception as e:
-            print(f"Error generating error summary: {e}")
-            if args.verbose:
-                import traceback
+            error(f"Error generating error summary: {e}")
+            import traceback
 
-                traceback.print_exc()
+            info(traceback.format_exc(), Verbosity.DEBUG)
             summary_data["errors"] = None
 
     # Format and output the summary
@@ -245,10 +239,10 @@ def execute(args: argparse.Namespace) -> int:
             csv_formatter.format_output(csv_data, args.output)
         else:  # table
             if args.output:
-                print(f"Warning: Table format does not support file output, printing to stdout")
+                info(f"Warning: Table format does not support file output, printing to stdout")
             table_formatter.format_output(summary_data)
     except Exception as e:
-        print(f"Error formatting output: {e}")
+        error(f"Error formatting output: {e}")
         return 1
 
     return 0
