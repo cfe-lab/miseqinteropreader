@@ -41,7 +41,7 @@ miseq-interop validate /path/to/run
 # ✓ SampleSheet.csv found
 # ✓ Marker: needsprocessing
 # ✓ Marker: qc_uploaded
-# 
+#
 # Available metrics:
 # ✓ ERROR_METRICS
 # ✓ QUALITY_METRICS
