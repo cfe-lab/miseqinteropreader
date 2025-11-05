@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-import pytest
+import pandas as pd
 
 from miseqinteropreader.commands import extract
 
@@ -12,62 +12,10 @@ from miseqinteropreader.commands import extract
 class TestExtractParquetFormat:
     """Tests for parquet format extraction."""
 
-    def test_extract_single_metric_parquet_without_pandas(
-        self, run_dir, tile_metric_file, tmp_path, capsys, monkeypatch
-    ):
-        """Test that parquet format fails when pandas is not available."""
-        # Create SampleSheet.csv
-        sample_sheet = run_dir / "SampleSheet.csv"
-        sample_sheet.write_text("[Header]\nInvestigatorName,Test\n")
-
-        # Mock pandas import to fail
-        import builtins
-
-        original_import = builtins.__import__
-
-        def mock_import(name, *args, **kwargs):
-            if name == "pandas":
-                raise ImportError("No module named 'pandas'")
-            return original_import(name, *args, **kwargs)
-
-        monkeypatch.setattr(builtins, "__import__", mock_import)
-
-        args = argparse.Namespace(
-            run_dir=run_dir,
-            metrics=["TILE_METRICS"],
-            all=False,
-            format="parquet",
-            output=tmp_path / "output.parquet",
-            verbosity=0,
-            quiet=False,
-            debug=False,
-            verbose=False,
-        )
-
-        result = extract.execute(args)
-        assert result == 1
-
-        captured = capsys.readouterr()
-        assert "Parquet format requires pandas" in captured.err
-
     def test_extract_single_metric_parquet(
         self, run_dir, tile_metric_file, tmp_path, capsys
     ):
         """Test extracting a single metric in parquet format."""
-        try:
-            import pandas as pd  # noqa: F401
-        except ImportError:
-            pytest.skip("pandas not installed")
-
-        # Check if parquet engine is available
-        try:
-            import pyarrow  # noqa: F401
-        except ImportError:
-            try:
-                import fastparquet  # noqa: F401
-            except ImportError:
-                pytest.skip("pyarrow or fastparquet required for parquet support")
-
         # Create SampleSheet.csv
         sample_sheet = run_dir / "SampleSheet.csv"
         sample_sheet.write_text("[Header]\nInvestigatorName,Test\n")
@@ -105,20 +53,6 @@ class TestExtractParquetFormat:
         capsys,
     ):
         """Test extracting multiple metrics in parquet format to a directory."""
-        try:
-            import pandas as pd  # noqa: F401
-        except ImportError:
-            pytest.skip("pandas not installed")
-
-        # Check if parquet engine is available
-        try:
-            import pyarrow  # noqa: F401
-        except ImportError:
-            try:
-                import fastparquet  # noqa: F401
-            except ImportError:
-                pytest.skip("pyarrow or fastparquet required for parquet support")
-
         # Create SampleSheet.csv
         sample_sheet = run_dir / "SampleSheet.csv"
         sample_sheet.write_text("[Header]\nInvestigatorName,Test\n")

@@ -98,14 +98,6 @@ def execute(args: argparse.Namespace) -> int:
         error("Error: Output path required when extracting multiple metrics")
         return 1
 
-    # For parquet format, check if pandas is available
-    if args.format == "parquet":
-        try:
-            import pandas as pd  # noqa: F401
-        except ImportError:
-            error("Error: Parquet format requires pandas to be installed")
-            return 1
-
     # Extract each metric
     for metric in metrics_to_extract:
         try:
