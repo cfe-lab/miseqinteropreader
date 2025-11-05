@@ -19,7 +19,7 @@ if ! git describe --tags --exact-match >/dev/null 2>&1; then
 fi
 
 # Clean and build
-rm -rf dist/ build/ *.egg-info
+rm -rf -- dist/ build/ *.egg-info || true
 uv build
 
 # Publish
