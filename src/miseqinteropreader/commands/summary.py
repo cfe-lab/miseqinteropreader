@@ -123,7 +123,7 @@ def execute(args: argparse.Namespace) -> int:
     # Generate quality summary
     if generate_quality:
         try:
-            records: list[QualityRecord] = reader.read_file(MetricFile.QUALITY_METRICS)  # type: ignore
+            records = reader.read_quality_records()
             quality_summary = reader.summarize_quality_records(records, read_lengths)
             summary_data["quality"] = {
                 "total_count": quality_summary.total_count,
@@ -147,7 +147,7 @@ def execute(args: argparse.Namespace) -> int:
     # Generate tile summary
     if generate_tiles:
         try:
-            tile_records: list[TileMetricRecord] = reader.read_file(MetricFile.TILE_METRICS)  # type: ignore
+            tile_records = reader.read_tile_records()
             tile_summary = reader.summarize_tile_records(tile_records)
             summary_data["tiles"] = {
                 "density_count": tile_summary.density_count,
@@ -171,7 +171,7 @@ def execute(args: argparse.Namespace) -> int:
     # Generate error summary
     if generate_errors:
         try:
-            error_records: list[ErrorRecord] = reader.read_file(MetricFile.ERROR_METRICS)  # type: ignore
+            error_records = reader.read_error_records()
 
             # Calculate error summary manually
             error_sum_forward = 0.0

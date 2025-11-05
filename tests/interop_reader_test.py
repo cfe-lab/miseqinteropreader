@@ -69,7 +69,7 @@ def test_interopreader(run_dir: Path, tile_metric_row: list[list[int | float]], 
 
     assert files_present
 
-    records = ior.read_file(MetricFile.TILE_METRICS)
+    records = ior.read_tile_records()
 
     assert len(records) == len(tile_metric_row)
 
