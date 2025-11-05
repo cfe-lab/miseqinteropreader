@@ -18,11 +18,8 @@ if ! git describe --tags --exact-match >/dev/null 2>&1; then
     exit 1
 fi
 
-# Clean and build
-rm -rf -- dist/ build/ *.egg-info || true
+# Build and publish
 uv build
-
-# Publish
 uv publish --token "$MISEQINTEROPREADER_PYPI_TOKEN"
 
 echo "Published to PyPI: https://pypi.org/project/miseqinteropreader/"
