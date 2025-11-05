@@ -144,15 +144,6 @@ miseq-interop validate /path/to/run && \
   miseq-interop summary /path/to/run --all --format json -o qc_metrics.json
 ```
 
-**Batch Processing:**
-```bash
-# Process all runs needing analysis
-miseq-interop list /media/raw_data/MiSeq/runs --needs-processing | \
-  while read run; do
-    miseq-interop summary "$run" --all --format json -o "${run}_summary.json"
-  done
-```
-
 **Quick QC Check:**
 ```bash
 # Get key metrics for a run
