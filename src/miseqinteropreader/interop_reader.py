@@ -177,7 +177,7 @@ class InterOpReader:
             logging.error(e)
             return False
 
-    def read_file(self, metric: MetricFile) -> list[BaseRecord]:
+    def _read_file(self, metric: MetricFile) -> list[BaseRecord]:
         """
         Reads specified Metric file and returns a list of *MetricRecords, the
         type of which is defiend in `MetricFile.model`.
@@ -191,6 +191,51 @@ class InterOpReader:
         """
         data = metric.value.read_file(self.interop_dir)
         return pd.DataFrame(data=[el.model_dump() for el in data])
+
+    def read_quality_records(self) -> list[QualityRecord]:
+        """Read quality metrics and return typed records."""
+        records = self._read_file(MetricFile.QUALITY_METRICS)
+        return [record for record in records if isinstance(record, QualityRecord)]
+
+    def read_tile_records(self) -> list[TileMetricRecord]:
+        """Read tile metrics and return typed records."""
+        records = self._read_file(MetricFile.TILE_METRICS)
+        return [record for record in records if isinstance(record, TileMetricRecord)]
+
+    def read_error_records(self) -> list[ErrorRecord]:
+        """Read error metrics and return typed records."""
+        records = self._read_file(MetricFile.ERROR_METRICS)
+        return [record for record in records if isinstance(record, ErrorRecord)]
+
+    def read_corrected_intensity_records(self) -> list[CorrectedIntensityRecord]:
+        """Read corrected intensity metrics and return typed records."""
+        records = self._read_file(MetricFile.CORRECTED_INTENSITY_METRICS)
+        return [record for record in records if isinstance(record, CorrectedIntensityRecord)]
+
+    def read_extraction_records(self) -> list[ExtractionRecord]:
+        """Read extraction metrics and return typed records."""
+        records = self._read_file(MetricFile.EXTRACTION_METRICS)
+        return [record for record in records if isinstance(record, ExtractionRecord)]
+
+    def read_image_records(self) -> list[ImageRecord]:
+        """Read image metrics and return typed records."""
+        records = self._read_file(MetricFile.IMAGE_METRICS)
+        return [record for record in records if isinstance(record, ImageRecord)]
+
+    def read_phasing_records(self) -> list[PhasingRecord]:
+        """Read phasing metrics and return typed records."""
+        records = self._read_file(MetricFile.PHASING_METRICS)
+        return [record for record in records if isinstance(record, PhasingRecord)]
+
+    def read_collapsed_q_records(self) -> list[CollapsedQRecord]:
+        """Read collapsed Q metrics and return typed records."""
+        records = self._read_file(MetricFile.COLLAPSED_Q_METRICS)
+        return [record for record in records if isinstance(record, CollapsedQRecord)]
+
+    def read_index_records(self) -> list[IndexRecord]:
+        """Read index metrics and return typed records."""
+        records = self._read_file(MetricFile.INDEX_METRICS)
+        return [record for record in records if isinstance(record, IndexRecord)]
 
     def summarize_tile_records(
         self, records: list[TileMetricRecord]
