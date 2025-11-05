@@ -52,13 +52,13 @@ source = "vcs"
 fallback_version = "0.dev0"
 
 [tool.hatch.build]
-include = [
-    "src/miseqinteropreader/",
-]
 exclude = [
     "tests/",
 ]
 skip-excluded-dirs = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/miseqinteropreader"]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
