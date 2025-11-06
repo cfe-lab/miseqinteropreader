@@ -88,8 +88,7 @@ class TestIntegrations:
         assert ior.qc_uploaded
         assert ior.needsprocessing
 
-        records: list[QualityRecord]
-        records = ior.read_file(MetricFile.QUALITY_METRICS)  # type: ignore
+        records = ior.read_quality_records()
         for record in records:
             assert isinstance(record, QualityRecord)
 
@@ -112,8 +111,7 @@ class TestIntegrations:
         assert ior.qc_uploaded
         assert ior.needsprocessing
 
-        tile_records: list[TileMetricRecord]
-        tile_records = ior.read_file(MetricFile.TILE_METRICS)  # type: ignore
+        tile_records = ior.read_tile_records()
         for tile_record in tile_records:
             assert isinstance(tile_record, TileMetricRecord)
 
@@ -130,8 +128,7 @@ class TestIntegrations:
             tile_summary.density_sum / tile_summary.density_count
         )
 
-        quality_records: list[QualityRecord]
-        quality_records = ior.read_file(MetricFile.QUALITY_METRICS)  # type: ignore
+        quality_records = ior.read_quality_records()
         for quality_record in quality_records:
             assert isinstance(quality_record, QualityRecord)
         quality_summary = ior.summarize_quality_records(quality_records)
