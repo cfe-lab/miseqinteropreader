@@ -5,7 +5,9 @@ from struct import pack
 
 import pytest
 
-from miseqinteropreader.interoptestgenerator import (
+from miseqinteropreader.read_records import BinaryFormat
+
+from .interoptestgenerator import (
     CollapsedQRecordGenerator,
     CorrectedIntensityRecordGenerator,
     ErrorRecordGenerator,
@@ -16,7 +18,6 @@ from miseqinteropreader.interoptestgenerator import (
     QualityRecordGenerator,
     TileRecordGenerator,
 )
-from miseqinteropreader.read_records import BinaryFormat
 
 
 @pytest.fixture
