@@ -71,11 +71,11 @@ class TestIntegrations:
         ]:
             if metric == MetricFile.SUMMARY_RUN:
                 with pytest.raises(ReferenceError):
-                    records = ior._read_file(metric)
+                    records = ior.read_generic_records(metric)
                     for record in records:
                         assert isinstance(record, metric.value.model)
             else:
-                records = ior._read_file(metric)
+                records = ior.read_generic_records(metric)
                 for record in records:
                     assert isinstance(record, metric.value.model)
 
@@ -169,7 +169,7 @@ class TestIntegrations:
         assert ior.qc_uploaded
         assert ior.needsprocessing
 
-        results = ior._read_file(metricfile)
+        results = ior.read_generic_records(metricfile)
         df = ior.read_file_to_dataframe(metricfile)
 
         assert len(results) == len(df.index)

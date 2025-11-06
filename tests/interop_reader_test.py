@@ -132,7 +132,7 @@ def test_interopreader_02(
     ]
     for record in check_records:
         data, kind = record
-        records = ior._read_file(kind)
+        records = ior.read_generic_records(kind)
 
         assert len(records) == len(data)
 

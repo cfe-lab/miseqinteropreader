@@ -104,7 +104,7 @@ def execute(args: argparse.Namespace) -> int:
             info(f"Extracting {metric.name}...", Verbosity.VERBOSE)
 
             # Read the metric data
-            records = reader._read_file(metric)
+            records = reader.read_generic_records(metric)
 
             if not records:
                 info(f"  Warning: No records found for {metric.name}", Verbosity.VERBOSE)

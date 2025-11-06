@@ -68,7 +68,7 @@ def execute(args: argparse.Namespace) -> int:
             continue  # No read method for this one
 
         try:
-            records = reader._read_file(metric)
+            records = reader.read_generic_records(metric)
             total_records += len(records)
 
             # Collect lane, tile, cycle info if available
