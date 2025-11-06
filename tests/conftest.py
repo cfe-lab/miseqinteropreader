@@ -52,7 +52,7 @@ def rng() -> Random:
     pytest.param(100, id="100 row per file"),
 ])
 def num_rows(request: pytest.FixtureRequest) -> int:
-    return request.param
+    return int(request.param)
 
 # tile metrics/extended tile metrics
 

@@ -137,7 +137,7 @@ class TestWritePhixCSV:
 
     def test_write_phix_csv_empty_records(self):
         """Test with empty records list."""
-        records = []
+        records: list[ErrorRecord] = []
 
         out_file = StringIO()
         result = write_phix_csv(out_file, records)

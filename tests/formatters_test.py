@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -60,7 +61,7 @@ class TestTableFormatter:
         """Test formatting an empty list."""
         from miseqinteropreader.formatters.table_formatter import format_output
 
-        data = []
+        data: list[Any] = []
 
         format_output(data)
 
@@ -71,7 +72,7 @@ class TestTableFormatter:
         """Test formatting an empty dictionary."""
         from miseqinteropreader.formatters.table_formatter import format_output
 
-        data = {}
+        data: dict[str, Any] = {}
 
         format_output(data)
 
@@ -210,7 +211,7 @@ class TestCSVFormatter:
         """Test formatting an empty list."""
         from miseqinteropreader.formatters.csv_formatter import format_output
 
-        data = []
+        data: list[Any] = []
         output_file = tmp_path / "empty.csv"
 
         format_output(data, output_file)
