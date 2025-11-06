@@ -2,9 +2,18 @@
 
 import argparse
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 from .commands import extract, info, summary, validate
+
+
+def get_version() -> str:
+    """Get the package version."""
+    try:
+        return version("miseqinteropreader")
+    except Exception:
+        return "unknown"
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -18,7 +27,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s 0.1.0",
+        version=f"%(prog)s {get_version()}",
     )
 
     # Create subparsers for commands
