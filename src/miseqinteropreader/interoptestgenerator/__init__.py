@@ -11,3 +11,16 @@ from .gen_data import (
     QualityRecordGenerator,
     TileRecordGenerator,
 )
+
+__all__ = [
+    "CollapsedQRecordGenerator",
+    "CorrectedIntensityRecordGenerator",
+    "ErrorRecordGenerator",
+    "ExtendedTileRecordGenerator",
+    "ExtractionRecordGenerator",
+    "ImageRecordGenerator",
+    "IndexRecordGenerator",
+    "PhasingRecordGenerator",
+    "QualityRecordGenerator",
+    "TileRecordGenerator",
+]
