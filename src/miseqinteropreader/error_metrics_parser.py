@@ -2,10 +2,9 @@ import csv
 import math
 import os
 import sys
-from collections.abc import Sequence
 from itertools import groupby
 from operator import attrgetter
-from typing import TextIO
+from typing import Sequence, TextIO
 
 from .models import ErrorMetricsSummary, ErrorRecord
 
