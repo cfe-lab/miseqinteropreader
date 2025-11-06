@@ -3,13 +3,13 @@ import math
 import os
 import sys
 from itertools import groupby
-from operator import itemgetter
+from operator import attrgetter
 
 from .models import ErrorMetricsSummary
 
 
 def _yield_cycles(records, read_lengths: tuple[int, int, int] | None = None):
-    sorted_records = sorted(map(itemgetter("tile", "cycle", "error_rate"), records))
+    sorted_records = sorted(map(attrgetter("tile", "cycle", "error_rate"), records))
     max_forward_cycle = read_lengths and read_lengths[0] or sys.maxsize
     min_reverse_cycle = read_lengths and sum(read_lengths[:-1]) + 1 or sys.maxsize
     for record in sorted_records:
@@ -33,12 +33,10 @@ def write_phix_csv(out_file, records, read_lengths: tuple[int, int, int] | None 
     Missing cycles are written with blank error rates, index reads are not
     written, and reverse reads are written with negative cycles.
     :param out_file: an open file to write to
-    :param records: a sequence of dictionaries like those yielded from
-    read_phix().
+    :param records: a sequence of ErrorRecord objects
     :param read_lengths: a list of lengths for each type of read: forward,
     indexes, and reverse
-    :param dict summary: a dictionary to hold the summary values:
-    error_rate_fwd and error_rate_rev.
+    :return: ErrorMetricsSummary with forward and reverse error statistics
     """
     writer = csv.writer(out_file, lineterminator=os.linesep)
     writer.writerow(["tile", "cycle", "errorrate"])

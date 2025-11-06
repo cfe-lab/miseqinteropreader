@@ -6,6 +6,7 @@ from io import StringIO
 import pytest
 
 from miseqinteropreader.error_metrics_parser import write_phix_csv
+from miseqinteropreader.models import ErrorRecord
 
 
 class TestWritePhixCSV:
@@ -14,9 +15,9 @@ class TestWritePhixCSV:
     def test_write_phix_csv_simple(self):
         """Test writing basic phix error rate data."""
         records = [
-            {"tile": 1101, "cycle": 1, "error_rate": 0.5},
-            {"tile": 1101, "cycle": 2, "error_rate": 0.6},
-            {"tile": 1101, "cycle": 3, "error_rate": 0.7},
+            ErrorRecord(lane=1, tile=1101, cycle=1, error_rate=0.5, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=2, error_rate=0.6, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=3, error_rate=0.7, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
         ]
 
         out_file = StringIO()
@@ -37,11 +38,11 @@ class TestWritePhixCSV:
     def test_write_phix_csv_with_read_lengths(self):
         """Test writing phix data with read length specification."""
         records = [
-            {"tile": 1101, "cycle": 1, "error_rate": 0.5},
-            {"tile": 1101, "cycle": 2, "error_rate": 0.6},
-            {"tile": 1101, "cycle": 3, "error_rate": 0.7},
-            {"tile": 1101, "cycle": 10, "error_rate": 0.8},  # index - should be skipped
-            {"tile": 1101, "cycle": 11, "error_rate": 0.9},  # reverse read
+            ErrorRecord(lane=1, tile=1101, cycle=1, error_rate=0.5, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=2, error_rate=0.6, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=3, error_rate=0.7, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=10, error_rate=0.8, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),  # index - should be skipped
+            ErrorRecord(lane=1, tile=1101, cycle=11, error_rate=0.9, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),  # reverse read
         ]
 
         # read_lengths: (forward, index, reverse)
@@ -63,9 +64,9 @@ class TestWritePhixCSV:
     def test_write_phix_csv_missing_cycles(self):
         """Test that missing cycles get blank entries."""
         records = [
-            {"tile": 1101, "cycle": 1, "error_rate": 0.5},
+            ErrorRecord(lane=1, tile=1101, cycle=1, error_rate=0.5, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
             # cycle 2 is missing
-            {"tile": 1101, "cycle": 3, "error_rate": 0.7},
+            ErrorRecord(lane=1, tile=1101, cycle=3, error_rate=0.7, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
         ]
 
         read_lengths = (3, 0, 0)
@@ -89,10 +90,10 @@ class TestWritePhixCSV:
     def test_write_phix_csv_multiple_tiles(self):
         """Test with multiple tiles."""
         records = [
-            {"tile": 1101, "cycle": 1, "error_rate": 0.5},
-            {"tile": 1101, "cycle": 2, "error_rate": 0.6},
-            {"tile": 1102, "cycle": 1, "error_rate": 0.3},
-            {"tile": 1102, "cycle": 2, "error_rate": 0.4},
+            ErrorRecord(lane=1, tile=1101, cycle=1, error_rate=0.5, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=2, error_rate=0.6, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1102, cycle=1, error_rate=0.3, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1102, cycle=2, error_rate=0.4, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
         ]
 
         out_file = StringIO()
@@ -108,10 +109,10 @@ class TestWritePhixCSV:
     def test_write_phix_csv_reverse_reads(self):
         """Test handling of reverse reads with negative cycles."""
         records = [
-            {"tile": 1101, "cycle": 1, "error_rate": 0.5},
-            {"tile": 1101, "cycle": 2, "error_rate": 0.6},
-            {"tile": 1101, "cycle": 11, "error_rate": 0.7},  # reverse read start
-            {"tile": 1101, "cycle": 12, "error_rate": 0.8},
+            ErrorRecord(lane=1, tile=1101, cycle=1, error_rate=0.5, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=2, error_rate=0.6, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=11, error_rate=0.7, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),  # reverse read start
+            ErrorRecord(lane=1, tile=1101, cycle=12, error_rate=0.8, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
         ]
 
         # forward=2, index=8, reverse=2
@@ -152,8 +153,8 @@ class TestWritePhixCSV:
     def test_write_phix_csv_rounding(self):
         """Test that error rates are properly rounded to 4 decimal places."""
         records = [
-            {"tile": 1101, "cycle": 1, "error_rate": 0.123456789},
-            {"tile": 1101, "cycle": 2, "error_rate": 0.987654321},
+            ErrorRecord(lane=1, tile=1101, cycle=1, error_rate=0.123456789, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
+            ErrorRecord(lane=1, tile=1101, cycle=2, error_rate=0.987654321, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
         ]
 
         out_file = StringIO()
