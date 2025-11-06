@@ -2,10 +2,12 @@ import csv
 import math
 import os
 import sys
+from collections.abc import Sequence
 from itertools import groupby
 from operator import attrgetter
+from typing import TextIO
 
-from .models import ErrorMetricsSummary
+from .models import ErrorMetricsSummary, ErrorRecord
 
 
 def _yield_cycles(records, read_lengths: tuple[int, int, int] | None = None):
@@ -27,7 +29,7 @@ def _record_grouper(record):
     return (record[0], int(math.copysign(1, record[1])))
 
 
-def write_phix_csv(out_file, records, read_lengths: tuple[int, int, int] | None = None):
+def write_phix_csv(out_file: TextIO, records: Sequence[ErrorRecord], read_lengths: tuple[int, int, int] | None = None) -> ErrorMetricsSummary:
     """Write phiX error rate data to a comma-separated-values file.
 
     Missing cycles are written with blank error rates, index reads are not
