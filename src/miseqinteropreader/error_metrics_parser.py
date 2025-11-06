@@ -2,14 +2,18 @@ import csv
 import math
 import os
 import sys
+from collections.abc import Iterator, Sequence
 from itertools import groupby
 from operator import attrgetter
-from typing import Sequence, TextIO
+from typing import TextIO
 
 from .models import ErrorMetricsSummary, ErrorRecord
 
 
-def _yield_cycles(records, read_lengths: tuple[int, int, int] | None = None):
+def _yield_cycles(
+    records: Sequence[ErrorRecord], read_lengths: tuple[int, int, int] | None = None
+) -> Iterator[tuple[int, int, float]]:
+    """Yield cycles with tile, cycle number, and error rate."""
     sorted_records = sorted(map(attrgetter("tile", "cycle", "error_rate"), records))
     max_forward_cycle = read_lengths and read_lengths[0] or sys.maxsize
     min_reverse_cycle = read_lengths and sum(read_lengths[:-1]) + 1 or sys.maxsize
@@ -23,8 +27,8 @@ def _yield_cycles(records, read_lengths: tuple[int, int, int] | None = None):
         yield record[0], cycle, rate
 
 
-def _record_grouper(record):
-    # Group by tile and sign of cycle (forward or reverse).
+def _record_grouper(record: tuple[int, int, float]) -> tuple[int, int]:
+    """Group by tile and sign of cycle (forward or reverse)."""
     return (record[0], int(math.copysign(1, record[1])))
 
 

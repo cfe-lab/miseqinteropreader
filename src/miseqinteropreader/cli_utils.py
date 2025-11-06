@@ -1,8 +1,9 @@
 """CLI utility functions for consistent output handling."""
 
+import argparse
 import sys
 from enum import IntEnum
-from typing import Optional
+from typing import Any, Optional
 
 
 class Verbosity(IntEnum):
@@ -62,7 +63,7 @@ def output(message: str, end: str = "\n") -> None:
     print(message, end=end)
 
 
-def add_verbosity_arguments(parser) -> None:
+def add_verbosity_arguments(parser: argparse.ArgumentParser) -> None:
     """Add standard verbosity arguments to an argument parser.
 
     Args:
@@ -94,7 +95,7 @@ def add_verbosity_arguments(parser) -> None:
     )
 
 
-def configure_verbosity(args) -> None:
+def configure_verbosity(args: Any) -> None:
     """Configure verbosity based on parsed arguments.
 
     Args:

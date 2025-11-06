@@ -9,10 +9,10 @@ from miseqinteropreader.read_records import BinaryFormat
 
 
 class BaseGenerator:
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.HEADER
         self.header_format = "!BB"
-        self.header_values = (1, 1)
+        self.header_values: tuple[int, ...] = (1, 1)
         self.metricfile = MetricFile.SUMMARY_RUN.value
 
     def _generate_numeric_sequence(
@@ -42,7 +42,7 @@ class BaseGenerator:
             yield pack(self._binary_format.format, *row)
 
     def gen_header(
-        self, format: str | None = None, values: tuple | None = None
+        self, format: str | None = None, values: tuple[int, ...] | None = None
     ) -> bytes:
         if format is None and values is None:
             return pack(self.header_format, *self.header_values)
@@ -51,7 +51,8 @@ class BaseGenerator:
         elif format is not None and values is None:
             return pack(format, *self.header_values)
         else:
-            return pack(format, *values)  # type: ignore
+            assert format is not None and values is not None
+            return pack(format, *values)
 
     def write_file(
         self, file: Path, header: bytes | None, binary_data: list[bytes] | bytes
@@ -75,9 +76,9 @@ class BaseGenerator:
 
 
 class IndexRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self.header_format = "!B"
-        self.header_values = (1,) # type: ignore
+        self.header_values: tuple[int, ...] = (1,)
         self.metricfile = MetricFile.INDEX_METRICS.value
 
     def generate_row(self, rand: Random) -> list[int | bytes]:
@@ -109,17 +110,17 @@ class IndexRecordGenerator(BaseGenerator):
         for row in row_data:
             bytepack = [
                 "<HHH",
-                "H" + f"{row[3]}s",  # type: ignore
+                "H" + f"{row[3]}s",
                 "I",
-                "H" + f"{row[6]}s",  # type: ignore
-                "H" + f"{row[8]}s",  # type: ignore
+                "H" + f"{row[6]}s",
+                "H" + f"{row[8]}s",
             ]
             data = pack("".join(bytepack), *row)
             yield data
 
 
 class QualityRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.QUALITY
         self.header_format = "!BB"
         self.header_values = (
@@ -129,7 +130,7 @@ class QualityRecordGenerator(BaseGenerator):
         self.metricfile = MetricFile.QUALITY_METRICS.value
 
 class ErrorRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.ERROR
         self.header_format = "!BB"
         self.header_values = (
@@ -139,7 +140,7 @@ class ErrorRecordGenerator(BaseGenerator):
         self.metricfile = MetricFile.ERROR_METRICS.value
 
 class TileRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.TILE
         self.header_format = "!BB"
         self.header_values = (
@@ -149,7 +150,7 @@ class TileRecordGenerator(BaseGenerator):
         self.metricfile = MetricFile.TILE_METRICS.value
 
 class ExtendedTileRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.TILE
         self.header_format = "!BB"
         self.header_values = (
@@ -159,7 +160,7 @@ class ExtendedTileRecordGenerator(BaseGenerator):
         self.metricfile = MetricFile.EXTENDED_TILE_METRICS.value
 
 class CorrectedIntensityRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.CORRECTEDINTENSITY
         self.header_format = "!BB"
         self.header_values = (
@@ -169,7 +170,7 @@ class CorrectedIntensityRecordGenerator(BaseGenerator):
         self.metricfile = MetricFile.CORRECTED_INTENSITY_METRICS.value
 
 class ExtractionRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.EXTRACTION
         self.header_format = "!BB"
         self.header_values = (
@@ -186,7 +187,7 @@ class ExtractionRecordGenerator(BaseGenerator):
         return row
 
 class ImageRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.IMAGE
         self.header_format = "!BB"
         self.header_values = (
@@ -197,7 +198,7 @@ class ImageRecordGenerator(BaseGenerator):
 
 
 class PhasingRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.PHASING
         self.header_format = "!BB"
         self.header_values = (
@@ -208,7 +209,7 @@ class PhasingRecordGenerator(BaseGenerator):
 
 
 class CollapsedQRecordGenerator(BaseGenerator):
-    def __init__(self):
+    def __init__(self) -> None:
         self._binary_format = BinaryFormat.COLLAPSEDQ
         self.header_format = "!BB"
         self.header_values = (

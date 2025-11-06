@@ -58,7 +58,7 @@ class BaseRecord(BaseModel):
             other_dict = other.model_dump()
             self_dict = self.model_dump()
             comparison_array = []
-            for k, info in self.model_fields.items():
+            for k, info in type(self).model_fields.items():
                 if info.annotation is float:
                     # we get into floating point innacuracies after 1e-7
                     close_enough = isclose(self_dict[k], other_dict[k], rel_tol=1e-7)
@@ -230,7 +230,7 @@ class QualityRecord(BaseCycleMetricRecord):
     quality_bins: Annotated[list[int], AfterValidator(check_quality_record_length)]
 
     @model_serializer
-    def custom_serializer(self):
+    def custom_serializer(self) -> dict[str, int]:
         """
         Since this has a list, it complicates the eventual pandas
         dataframe transformation. To that end we turn it into a flat dict
