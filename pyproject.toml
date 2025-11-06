@@ -9,6 +9,14 @@ authors = [
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
 license = {text = "MIT"}
+keywords = ["illumina", "miseq", "sequencing", "bioinformatics", "interop", "binary-parser"]
+
+[project.urls]
+Homepage = "https://github.com/cfe-lab/miseqinteropreader"
+Repository = "https://github.com/cfe-lab/miseqinteropreader"
+Issues = "https://github.com/cfe-lab/miseqinteropreader/issues"
+Documentation = "https://github.com/cfe-lab/miseqinteropreader#readme"
+
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
@@ -16,10 +24,11 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Typing :: Typed",
 ]
 
 dependencies = [
