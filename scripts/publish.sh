@@ -18,6 +18,9 @@ if ! git describe --tags --exact-match >/dev/null 2>&1; then
     exit 1
 fi
 
+# Clean previous packages
+rm -rf dist
+
 # Build and publish
 uv build
 uv publish --token "$MISEQINTEROPREADER_PYPI_TOKEN"
