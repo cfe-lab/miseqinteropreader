@@ -6,7 +6,7 @@ from io import StringIO
 import pytest
 
 from miseqinteropreader.error_metrics_parser import write_phix_csv
-from miseqinteropreader.models import ErrorRecord
+from miseqinteropreader.models import ErrorRecord, ReadLengths3, ReadLengths4
 
 
 class TestWritePhixCSV:
@@ -45,8 +45,8 @@ class TestWritePhixCSV:
             ErrorRecord(lane=1, tile=1101, cycle=11, error_rate=0.9, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),  # reverse read
         ]
 
-        # read_lengths: (forward, index, reverse)
-        read_lengths = (3, 8, 3)
+        # read_lengths: forward=3, index1+index2=8, reverse=3
+        read_lengths = ReadLengths4(forward_read=3, index1=4, index2=4, reverse_read=3)
 
         out_file = StringIO()
         result = write_phix_csv(out_file, records, read_lengths)
@@ -69,7 +69,7 @@ class TestWritePhixCSV:
             ErrorRecord(lane=1, tile=1101, cycle=3, error_rate=0.7, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
         ]
 
-        read_lengths = (3, 0, 0)
+        read_lengths = ReadLengths4(forward_read=3, index1=0, index2=0, reverse_read=0)
 
         out_file = StringIO()
         result = write_phix_csv(out_file, records, read_lengths)
@@ -115,8 +115,8 @@ class TestWritePhixCSV:
             ErrorRecord(lane=1, tile=1101, cycle=12, error_rate=0.8, num_0_errors=0, num_1_errors=0, num_2_errors=0, num_3_errors=0, num_4_errors=0),
         ]
 
-        # forward=2, index=8, reverse=2
-        read_lengths = (2, 8, 2)
+        # forward=2, index1+index2=8, reverse=2
+        read_lengths = ReadLengths4(forward_read=2, index1=4, index2=4, reverse_read=2)
 
         out_file = StringIO()
         result = write_phix_csv(out_file, records, read_lengths)

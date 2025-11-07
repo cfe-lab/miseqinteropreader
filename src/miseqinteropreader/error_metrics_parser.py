@@ -7,7 +7,7 @@ from itertools import groupby
 from operator import attrgetter
 from typing import TextIO
 
-from .models import ErrorMetricsSummary, ErrorRecord
+from .models import ErrorMetricsSummary, ErrorRecord, ReadLengths3, ReadLengths4
 
 
 def _yield_cycles(
@@ -32,24 +32,38 @@ def _record_grouper(record: tuple[int, int, float]) -> tuple[int, int]:
     return (record[0], int(math.copysign(1, record[1])))
 
 
-def write_phix_csv(out_file: TextIO, records: Sequence[ErrorRecord], read_lengths: tuple[int, int, int] | None = None) -> ErrorMetricsSummary:
+def write_phix_csv(
+    out_file: TextIO,
+    records: Sequence[ErrorRecord],
+    read_lengths: ReadLengths3 | ReadLengths4 | None = None
+) -> ErrorMetricsSummary:
     """Write phiX error rate data to a comma-separated-values file.
 
     Missing cycles are written with blank error rates, index reads are not
     written, and reverse reads are written with negative cycles.
     :param out_file: an open file to write to
     :param records: a sequence of ErrorRecord objects
-    :param read_lengths: a list of lengths for each type of read: forward,
-    indexes, and reverse
+    :param read_lengths: ReadLengths3 or ReadLengths4 specifying read structure, or None
     :return: ErrorMetricsSummary with forward and reverse error statistics
     """
+    # Convert ReadLengths3/4 to tuple for internal use
+    read_lengths_tuple: tuple[int, int, int] | None = None
+    if read_lengths is not None:
+        if isinstance(read_lengths, ReadLengths4):
+            read_lengths = read_lengths.to_read_lengths_3()
+        read_lengths_tuple = (
+            read_lengths.forward_read,
+            read_lengths.indexes_combined,
+            read_lengths.reverse_read
+        )
+
     writer = csv.writer(out_file, lineterminator=os.linesep)
     writer.writerow(["tile", "cycle", "errorrate"])
 
     error_sums = [0.0, 0.0]
     error_counts = [0, 0]
     for (_tile, sign), group in groupby(
-        _yield_cycles(records, read_lengths), _record_grouper
+        _yield_cycles(records, read_lengths_tuple), _record_grouper
     ):
         previous_cycle = 0
         record = None
@@ -63,8 +77,8 @@ def write_phix_csv(out_file: TextIO, records: Sequence[ErrorRecord], read_length
             summary_index = (sign + 1) // 2
             error_sums[summary_index] += record[2]
             error_counts[summary_index] += 1
-        if read_lengths and record is not None:
-            read_length = read_lengths[0] if sign == 1 else -read_lengths[-1]
+        if read_lengths_tuple and record is not None:
+            read_length = read_lengths_tuple[0] if sign == 1 else -read_lengths_tuple[-1]
             while previous_cycle * sign < read_length * sign:
                 previous_cycle += sign
                 writer.writerow((record[0], previous_cycle, ""))
