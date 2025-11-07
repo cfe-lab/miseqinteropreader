@@ -131,16 +131,30 @@ class TestSummaryCommandModule:
     def test_parse_read_lengths_3_values(self):
         """Test parsing read lengths with 3 values."""
         from miseqinteropreader.commands.summary import parse_read_lengths
+        from miseqinteropreader.models import ReadLengths3
 
         result = parse_read_lengths("150,8,150")
-        assert result == (150, 8, 150)
+        assert isinstance(result, ReadLengths3)
+        assert result.forward_read == 150
+        assert result.indexes_combined == 8
+        assert result.reverse_read == 150
 
     def test_parse_read_lengths_4_values(self):
         """Test parsing read lengths with 4 values."""
         from miseqinteropreader.commands.summary import parse_read_lengths
+        from miseqinteropreader.models import ReadLengths4
 
         result = parse_read_lengths("150,8,8,150")
-        assert result == (150, 16, 150)
+        assert isinstance(result, ReadLengths4)
+        assert result.forward_read == 150
+        assert result.index1 == 8
+        assert result.index2 == 8
+        assert result.reverse_read == 150
+        # Test conversion to ReadLengths3
+        result3 = result.to_read_lengths_3()
+        assert result3.forward_read == 150
+        assert result3.indexes_combined == 16
+        assert result3.reverse_read == 150
 
     def test_parse_read_lengths_invalid(self):
         """Test parsing invalid read lengths."""

@@ -2,7 +2,7 @@ import logging
 from enum import Enum
 from io import BufferedReader
 from pathlib import Path
-from typing import Callable, Iterable, Iterator
+from typing import Callable, Iterable, Iterator, Optional
 
 import pandas as pd
 from pydantic import BaseModel
@@ -19,6 +19,9 @@ from .models import (
     PhasingRecord,
     QualityMetricsSummary,
     QualityRecord,
+    ReadLengths,
+    ReadLengths3,
+    ReadLengths4,
     TileMetricCodes,
     TileMetricRecord,
     TileMetricSummary,
@@ -270,17 +273,15 @@ class InterOpReader:
     def summarize_quality_records(
         self,
         records: list[QualityRecord],
-        read_lengths: tuple[int, int, int] | None = None,
+        read_lengths: Optional[ReadLengths] = None,
     ) -> QualityMetricsSummary:
         """Calculate the portion of clusters and cycles with quality >= 30
         (`quality_bins[29:]`).
 
-        :param records: a sequence of dictionaries like those yielded from
-        read_quality().
-        :param dict summary: a dictionary to hold the summary values:
-        q30_fwd and q30_rev. If read_lengths is None, only fwd_q30 will be set.
-        :param tuple read_lengths: a tuple of lengths for each type of read: forward,
-        indexes, and reverse.
+        :param records: a sequence of QualityRecord objects.
+        :param read_lengths: ReadLengths3 or ReadLengths4 specifying the read structure.
+            If None, all cycles are treated as forward reads.
+        :return: QualityMetricsSummary with q30_forward and q30_reverse statistics.
         """
         total_count = 0
         total_reverse = 0
@@ -288,9 +289,15 @@ class InterOpReader:
         good_reverse = 0
         last_forward_cycle = None
         first_reverse_cycle = None
+
         if read_lengths is not None:
-            last_forward_cycle = read_lengths[0]
-            first_reverse_cycle = sum(read_lengths[:-1]) + 1
+            # Convert ReadLengths4 to ReadLengths3 if needed
+            if isinstance(read_lengths, ReadLengths4):
+                read_lengths = read_lengths.to_read_lengths_3()
+
+            last_forward_cycle = read_lengths.forward_read
+            first_reverse_cycle = read_lengths.forward_read + read_lengths.indexes_combined + 1
+
         for record in records:
             cycle = record.cycle
             cycle_clusters = sum(record.quality_bins)

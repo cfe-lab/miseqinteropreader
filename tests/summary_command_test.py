@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from miseqinteropreader.commands import summary
+from miseqinteropreader.models import ReadLengths3, ReadLengths4
 
 
 class TestSummaryParseReadLengths:
@@ -16,12 +17,22 @@ class TestSummaryParseReadLengths:
     def test_parse_read_lengths_3_values(self):
         """Test parsing 3 read lengths (forward, index, reverse)."""
         result = summary.parse_read_lengths("150,8,150")
-        assert result == (150, 8, 150)
+        assert isinstance(result, ReadLengths3)
+        assert result.forward_read == 150
+        assert result.indexes_combined == 8
+        assert result.reverse_read == 150
 
     def test_parse_read_lengths_4_values(self):
         """Test parsing 4 read lengths (forward, index1, index2, reverse)."""
         result = summary.parse_read_lengths("150,8,8,150")
-        assert result == (150, 16, 150)  # Indexes are combined
+        assert isinstance(result, ReadLengths4)
+        assert result.forward_read == 150
+        assert result.index1 == 8
+        assert result.index2 == 8
+        assert result.reverse_read == 150
+        # Test conversion to ReadLengths3
+        result3 = result.to_read_lengths_3()
+        assert result3.indexes_combined == 16
 
     def test_parse_read_lengths_invalid_count(self):
         """Test that invalid number of values raises error."""
@@ -31,7 +42,10 @@ class TestSummaryParseReadLengths:
     def test_parse_read_lengths_whitespace(self):
         """Test that whitespace is handled correctly."""
         result = summary.parse_read_lengths(" 150 , 8 , 150 ")
-        assert result == (150, 8, 150)
+        assert isinstance(result, ReadLengths3)
+        assert result.forward_read == 150
+        assert result.indexes_combined == 8
+        assert result.reverse_read == 150
 
 
 class TestSummaryInvalidReadLengths:

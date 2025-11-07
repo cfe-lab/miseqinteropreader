@@ -13,7 +13,14 @@ from ..cli_utils import (
 )
 from ..formatters import csv_formatter, json_formatter, table_formatter
 from ..interop_reader import InterOpReader, MetricFile
-from ..models import ErrorRecord, QualityRecord, TileMetricRecord
+from ..models import (
+    ErrorRecord,
+    QualityRecord,
+    ReadLengths,
+    ReadLengths3,
+    ReadLengths4,
+    TileMetricRecord,
+)
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
@@ -63,21 +70,21 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     add_verbosity_arguments(parser)
 
 
-def parse_read_lengths(read_lengths_str: str) -> tuple[int, int, int]:
+def parse_read_lengths(read_lengths_str: str) -> ReadLengths:
     """Parse read lengths string into tuple.
 
     Args:
         read_lengths_str: Comma-separated read lengths (e.g., '150,8,8,150')
 
     Returns:
-        Tuple of (forward_length, index_length, reverse_length)
+        ReadLengths
     """
     parts = [int(x.strip()) for x in read_lengths_str.split(",")]
     if len(parts) == 3:
-        return (parts[0], parts[1], parts[2])
+        return ReadLengths3(forward_read=parts[0], indexes_combined=parts[1], reverse_read=parts[2])
     elif len(parts) == 4:
         # Format: forward, index1, index2, reverse
-        return (parts[0], parts[1] + parts[2], parts[3])
+        return ReadLengths4(forward_read=parts[0], index1=parts[1], index2=parts[2], reverse_read=parts[3])
     else:
         raise ValueError(
             "Read lengths must be 3 or 4 comma-separated integers (e.g., '150,8,8,150')"
@@ -180,8 +187,12 @@ def execute(args: argparse.Namespace) -> int:
             error_count_reverse = 0
 
             if read_lengths:
-                last_forward_cycle = read_lengths[0]
-                first_reverse_cycle = sum(read_lengths[:-1]) + 1
+                # Convert ReadLengths4 to ReadLengths3 if needed
+                if isinstance(read_lengths, ReadLengths4):
+                    read_lengths = read_lengths.to_read_lengths_3()
+
+                last_forward_cycle = read_lengths.forward_read
+                first_reverse_cycle = read_lengths.forward_read + read_lengths.indexes_combined + 1
 
                 for record in error_records:
                     if record.cycle <= last_forward_cycle:

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from functools import cached_property
 from math import isclose
-from typing import Annotated, Any
+from typing import Annotated, Any, TypeAlias
 
 from pydantic import (
     AfterValidator,
@@ -362,3 +362,41 @@ class ErrorMetricsSummary(BaseModel):
         if self.error_count_reverse == 0:
             return 0.0
         return self.error_sum_reverse / float(self.error_count_reverse)
+
+
+class ReadLengths3(BaseModel):
+    """Read lengths with combined index reads.
+
+    Used when all index reads are treated as a single gap between forward and reverse reads.
+    Total cycles = forward_read + indexes_combined + reverse_read
+    """
+    model_config = ConfigDict(frozen=True)
+
+    forward_read: int = Field(ge=0, description="Length of forward read")
+    indexes_combined: int = Field(ge=0, description="Combined length of all index reads")
+    reverse_read: int = Field(ge=0, description="Length of reverse read")
+
+
+class ReadLengths4(BaseModel):
+    """Read lengths with separate index reads.
+
+    Used when index reads are specified separately.
+    Total cycles = forward_read + index1 + index2 + reverse_read
+    """
+    model_config = ConfigDict(frozen=True)
+
+    forward_read: int = Field(ge=0, description="Length of forward read (read1)")
+    index1: int = Field(ge=0, description="Length of first index read")
+    index2: int = Field(ge=0, description="Length of second index read")
+    reverse_read: int = Field(ge=0, description="Length of reverse read (read2)")
+
+    def to_read_lengths_3(self) -> "ReadLengths3":
+        """Convert to ReadLengths3 by combining index reads."""
+        return ReadLengths3(
+            forward_read=self.forward_read,
+            indexes_combined=self.index1 + self.index2,
+            reverse_read=self.reverse_read
+        )
+
+
+ReadLengths: TypeAlias = ReadLengths3 | ReadLengths4
