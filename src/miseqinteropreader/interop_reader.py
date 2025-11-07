@@ -288,15 +288,15 @@ class InterOpReader:
         good_reverse = 0
         last_forward_cycle = None
         first_reverse_cycle = None
-        
+
         if read_lengths is not None:
             # Convert ReadLengths4 to ReadLengths3 if needed
             if isinstance(read_lengths, ReadLengths4):
                 read_lengths = read_lengths.to_read_lengths_3()
-            
+
             last_forward_cycle = read_lengths.forward_read
             first_reverse_cycle = read_lengths.forward_read + read_lengths.indexes_combined + 1
-            
+
         for record in records:
             cycle = record.cycle
             cycle_clusters = sum(record.quality_bins)
