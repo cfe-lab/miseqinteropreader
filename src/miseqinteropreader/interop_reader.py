@@ -2,7 +2,7 @@ import logging
 from enum import Enum
 from io import BufferedReader
 from pathlib import Path
-from typing import Callable, Iterable, Iterator, Optional
+from typing import Callable, Iterable, Iterator, Sequence
 
 import pandas as pd
 from pydantic import BaseModel
@@ -19,7 +19,6 @@ from .models import (
     PhasingRecord,
     QualityMetricsSummary,
     QualityRecord,
-    ReadLengths,
     ReadLengths3,
     ReadLengths4,
     TileMetricCodes,
@@ -45,7 +44,7 @@ class Metric(BaseModel):
     to hold data, and the method which to read the data into the model.
     """
 
-    files: list[str]
+    files: Sequence[str]
     model: type[BaseRecord]
     read_method: Callable[[BufferedReader], Iterator[BaseRecord]] | None = None
 
@@ -57,7 +56,7 @@ class Metric(BaseModel):
             f"Could not find {'/'.join(self.files)} in {interop_dir}"
         )
 
-    def read_file(self, interop_dir: Path) -> list[BaseRecord]:
+    def read_file(self, interop_dir: Path) -> Sequence[BaseRecord]:
         if self.read_method is None:
             raise ReferenceError("No associated read method for this type!")
         with open(self.get_file(interop_dir), mode="rb") as f:
@@ -180,7 +179,7 @@ class InterOpReader:
             logging.error(e)
             return False
 
-    def read_generic_records(self, metric: MetricFile) -> list[BaseRecord]:
+    def read_generic_records(self, metric: MetricFile) -> Sequence[BaseRecord]:
         """
         Reads specified Metric file and returns a list of *MetricRecords, the
         type of which is defiend in `MetricFile.model`.
@@ -195,53 +194,53 @@ class InterOpReader:
         data = metric.value.read_file(self.interop_dir)
         return pd.DataFrame(data=[el.model_dump() for el in data])
 
-    def read_quality_records(self) -> list[QualityRecord]:
+    def read_quality_records(self) -> Sequence[QualityRecord]:
         """Read quality metrics and return typed records."""
         records = self.read_generic_records(MetricFile.QUALITY_METRICS)
         return [record for record in records if isinstance(record, QualityRecord)]
 
-    def read_tile_records(self) -> list[TileMetricRecord]:
+    def read_tile_records(self) -> Sequence[TileMetricRecord]:
         """Read tile metrics and return typed records."""
         records = self.read_generic_records(MetricFile.TILE_METRICS)
         return [record for record in records if isinstance(record, TileMetricRecord)]
 
-    def read_error_records(self) -> list[ErrorRecord]:
+    def read_error_records(self) -> Sequence[ErrorRecord]:
         """Read error metrics and return typed records."""
         records = self.read_generic_records(MetricFile.ERROR_METRICS)
         return [record for record in records if isinstance(record, ErrorRecord)]
 
-    def read_corrected_intensity_records(self) -> list[CorrectedIntensityRecord]:
+    def read_corrected_intensity_records(self) -> Sequence[CorrectedIntensityRecord]:
         """Read corrected intensity metrics and return typed records."""
         records = self.read_generic_records(MetricFile.CORRECTED_INTENSITY_METRICS)
         return [record for record in records if isinstance(record, CorrectedIntensityRecord)]
 
-    def read_extraction_records(self) -> list[ExtractionRecord]:
+    def read_extraction_records(self) -> Sequence[ExtractionRecord]:
         """Read extraction metrics and return typed records."""
         records = self.read_generic_records(MetricFile.EXTRACTION_METRICS)
         return [record for record in records if isinstance(record, ExtractionRecord)]
 
-    def read_image_records(self) -> list[ImageRecord]:
+    def read_image_records(self) -> Sequence[ImageRecord]:
         """Read image metrics and return typed records."""
         records = self.read_generic_records(MetricFile.IMAGE_METRICS)
         return [record for record in records if isinstance(record, ImageRecord)]
 
-    def read_phasing_records(self) -> list[PhasingRecord]:
+    def read_phasing_records(self) -> Sequence[PhasingRecord]:
         """Read phasing metrics and return typed records."""
         records = self.read_generic_records(MetricFile.PHASING_METRICS)
         return [record for record in records if isinstance(record, PhasingRecord)]
 
-    def read_collapsed_q_records(self) -> list[CollapsedQRecord]:
+    def read_collapsed_q_records(self) -> Sequence[CollapsedQRecord]:
         """Read collapsed Q metrics and return typed records."""
         records = self.read_generic_records(MetricFile.COLLAPSED_Q_METRICS)
         return [record for record in records if isinstance(record, CollapsedQRecord)]
 
-    def read_index_records(self) -> list[IndexRecord]:
+    def read_index_records(self) -> Sequence[IndexRecord]:
         """Read index metrics and return typed records."""
         records = self.read_generic_records(MetricFile.INDEX_METRICS)
         return [record for record in records if isinstance(record, IndexRecord)]
 
     def summarize_tile_records(
-        self, records: list[TileMetricRecord]
+        self, records: Sequence[TileMetricRecord]
     ) -> TileMetricSummary:
         """Summarize the records from a tile metrics file.
 
@@ -272,8 +271,8 @@ class InterOpReader:
 
     def summarize_quality_records(
         self,
-        records: list[QualityRecord],
-        read_lengths: Optional[ReadLengths] = None,
+        records: Sequence[QualityRecord],
+        read_lengths: ReadLengths3 | ReadLengths4 | None = None,
     ) -> QualityMetricsSummary:
         """Calculate the portion of clusters and cycles with quality >= 30
         (`quality_bins[29:]`).
@@ -289,15 +288,15 @@ class InterOpReader:
         good_reverse = 0
         last_forward_cycle = None
         first_reverse_cycle = None
-
+        
         if read_lengths is not None:
             # Convert ReadLengths4 to ReadLengths3 if needed
             if isinstance(read_lengths, ReadLengths4):
                 read_lengths = read_lengths.to_read_lengths_3()
-
+            
             last_forward_cycle = read_lengths.forward_read
             first_reverse_cycle = read_lengths.forward_read + read_lengths.indexes_combined + 1
-
+            
         for record in records:
             cycle = record.cycle
             cycle_clusters = sum(record.quality_bins)

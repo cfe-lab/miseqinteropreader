@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from functools import cached_property
 from math import isclose
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any, Sequence, TypeAlias
 
 from pydantic import (
     AfterValidator,
@@ -217,7 +217,7 @@ class ErrorRecord(BaseCycleMetricRecord):
     num_4_errors: uint32
 
 
-def check_quality_record_length(v: list[int]) -> list[int]:
+def check_quality_record_length(v: Sequence[int]) -> Sequence[int]:
     assert len(v) == 50, "Length mismatch!"
     return v
 
@@ -227,7 +227,7 @@ class QualityRecord(BaseCycleMetricRecord):
     https://illumina.github.io/interop/q_v4.html
     """
 
-    quality_bins: Annotated[list[int], AfterValidator(check_quality_record_length)]
+    quality_bins: Annotated[Sequence[int], AfterValidator(check_quality_record_length)]
 
     @model_serializer
     def custom_serializer(self) -> dict[str, int]:
