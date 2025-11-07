@@ -11,12 +11,16 @@ from .models import ErrorMetricsSummary, ErrorRecord, ReadLengths3, ReadLengths4
 
 
 def _yield_cycles(
-    records: Sequence[ErrorRecord], read_lengths: tuple[int, int, int] | None = None
+    records: Sequence[ErrorRecord], read_lengths: ReadLengths3 | None = None
 ) -> Iterator[tuple[int, int, float]]:
     """Yield cycles with tile, cycle number, and error rate."""
     sorted_records = sorted(map(attrgetter("tile", "cycle", "error_rate"), records))
-    max_forward_cycle = read_lengths and read_lengths[0] or sys.maxsize
-    min_reverse_cycle = read_lengths and sum(read_lengths[:-1]) + 1 or sys.maxsize
+    max_forward_cycle = read_lengths.forward_read if read_lengths else sys.maxsize
+    min_reverse_cycle = (
+        read_lengths.forward_read + read_lengths.indexes_combined + 1
+        if read_lengths
+        else sys.maxsize
+    )
     for record in sorted_records:
         cycle = record[1]
         if cycle >= min_reverse_cycle:
@@ -46,16 +50,13 @@ def write_phix_csv(
     :param read_lengths: ReadLengths3 or ReadLengths4 specifying read structure, or None
     :return: ErrorMetricsSummary with forward and reverse error statistics
     """
-    # Convert ReadLengths3/4 to tuple for internal use
-    read_lengths_tuple: tuple[int, int, int] | None = None
+    # Convert ReadLengths4 to ReadLengths3 if needed
+    read_lengths_3: ReadLengths3 | None = None
     if read_lengths is not None:
         if isinstance(read_lengths, ReadLengths4):
-            read_lengths = read_lengths.to_read_lengths_3()
-        read_lengths_tuple = (
-            read_lengths.forward_read,
-            read_lengths.indexes_combined,
-            read_lengths.reverse_read
-        )
+            read_lengths_3 = read_lengths.to_read_lengths_3()
+        else:
+            read_lengths_3 = read_lengths
 
     writer = csv.writer(out_file, lineterminator=os.linesep)
     writer.writerow(["tile", "cycle", "errorrate"])
@@ -63,7 +64,7 @@ def write_phix_csv(
     error_sums = [0.0, 0.0]
     error_counts = [0, 0]
     for (_tile, sign), group in groupby(
-        _yield_cycles(records, read_lengths_tuple), _record_grouper
+        _yield_cycles(records, read_lengths_3), _record_grouper
     ):
         previous_cycle = 0
         record = None
@@ -77,8 +78,8 @@ def write_phix_csv(
             summary_index = (sign + 1) // 2
             error_sums[summary_index] += record[2]
             error_counts[summary_index] += 1
-        if read_lengths_tuple and record is not None:
-            read_length = read_lengths_tuple[0] if sign == 1 else -read_lengths_tuple[-1]
+        if read_lengths_3 and record is not None:
+            read_length = read_lengths_3.forward_read if sign == 1 else -read_lengths_3.reverse_read
             while previous_cycle * sign < read_length * sign:
                 previous_cycle += sign
                 writer.writerow((record[0], previous_cycle, ""))
