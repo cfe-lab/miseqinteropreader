@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "pydantic>=2.8.2,<3.0.0",
-    "pandas>=2.2.2,<3.0.0",
+    "pandas>=2.2.2,<4.0.0",
     "pyarrow>=16.0.0",
 ]
 
